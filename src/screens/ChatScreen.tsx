@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { Input, Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
@@ -6,8 +6,90 @@ import { chatStore, Message } from '../store/ChatStore';
 import Markdown from 'react-native-markdown-display';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 
+// 打字机效果组件
+interface TypewriterTextProps {
+  content: string;
+  isStreaming?: boolean;
+  speed?: number; // 每个字符的显示间隔(ms)
+  theme: any;
+  onComplete?: () => void;
+}
+
+const TypewriterText = ({ content, isStreaming, speed = 30, theme, onComplete }: TypewriterTextProps) => {
+  const [displayedContent, setDisplayedContent] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
+  const indexRef = useRef(0);
+  const contentRef = useRef(content);
+
+  useEffect(() => {
+    // 如果是流式消息，直接显示全部内容
+    if (isStreaming) {
+      setDisplayedContent(content);
+      return;
+    }
+
+    // 如果内容改变了，重置状态（用于动态内容）
+    if (contentRef.current !== content) {
+      contentRef.current = content;
+      // 对于已完成的新消息，启动打字机效果
+      if (!isComplete) {
+        indexRef.current = 0;
+        setDisplayedContent('');
+      }
+    }
+
+    // 如果已完成打字效果或者内容为空，不需要动画
+    if (isComplete || !content) {
+      setDisplayedContent(content);
+      return;
+    }
+
+    // 打字机效果
+    if (indexRef.current < content.length) {
+      const timer = setTimeout(() => {
+        indexRef.current += 1;
+        setDisplayedContent(content.slice(0, indexRef.current));
+      }, speed);
+      return () => clearTimeout(timer);
+    } else {
+      // 打字完成
+      setIsComplete(true);
+      onComplete?.();
+    }
+  }, [content, displayedContent, isStreaming, speed, isComplete, onComplete]);
+
+  // 流式消息完成时，标记打字完成
+  useEffect(() => {
+    if (!isStreaming && contentRef.current === content && indexRef.current >= content.length) {
+      setIsComplete(true);
+    }
+  }, [isStreaming, content]);
+
+  return (
+    <Markdown style={{ 
+      body: { color: theme.colors.black, fontSize: 16 }, 
+      paragraph: { marginTop: 0, marginBottom: 0 } 
+    }}>
+      {displayedContent || ' '} 
+    </Markdown>
+  );
+};
+
+// 追踪已显示过的消息ID，避免重复播放打字机效果
+const displayedMessageIds = new Set<string>();
+
 const MessageBubble = ({ message, theme }: { message: Message, theme: any }) => {
   const isUser = message.role === 'user';
+  // 判断是否需要打字机效果：只对新的、未显示过的 AI 消息使用
+  const needsTypewriter = !isUser && !displayedMessageIds.has(message.id);
+  
+  // 标记消息已显示
+  useEffect(() => {
+    if (!isUser) {
+      displayedMessageIds.add(message.id);
+    }
+  }, [message.id, isUser]);
+
   return (
     <View style={[
       styles.bubbleContainer, 
@@ -20,12 +102,12 @@ const MessageBubble = ({ message, theme }: { message: Message, theme: any }) => 
         {isUser ? (
              <Text style={{ color: theme.colors.white }}>{message.content}</Text>
         ) : (
-             <Markdown style={{ 
-                 body: { color: theme.colors.black, fontSize: 16 }, 
-                 paragraph: { marginTop: 0, marginBottom: 0 } 
-             }}>
-                {message.content}
-             </Markdown>
+             <TypewriterText 
+               content={message.content}
+               isStreaming={message.isStreaming}
+               theme={theme}
+               speed={needsTypewriter ? 30 : 0} // 已显示过的消息直接显示
+             />
         )}
       </View>
       <Text style={styles.timestamp}>

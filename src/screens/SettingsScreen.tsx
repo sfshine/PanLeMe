@@ -40,9 +40,9 @@ export const SettingsScreen = observer(({ navigation }: any) => {
   const handleClear = () => {
     Alert.alert('Confirm', 'Are you sure you want to clear the API Key?', [
       { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Clear', 
-        style: 'destructive', 
+      {
+        text: 'Clear',
+        style: 'destructive',
         onPress: () => {
           userStore.clearApiKey();
           setApiKey('');
@@ -59,18 +59,18 @@ export const SettingsScreen = observer(({ navigation }: any) => {
 
       <View style={styles.section}>
         <Text h5 style={styles.sectionTitle}>API Configuration</Text>
-        
+
         {userStore.isConfigured ? (
           <View style={styles.configuredContainer}>
             <View style={styles.keyDisplay}>
-                <Text style={styles.keyText}>
-                    Key: {userStore.apiKey?.slice(0, 3)}...{userStore.apiKey?.slice(-4)}
-                </Text>
-                <Icon name="check-circle" color={theme.colors.success} />
+              <Text style={styles.keyText}>
+                Key: {userStore.apiKey?.slice(0, 3)}...{userStore.apiKey?.slice(-4)}
+              </Text>
+              <Icon name="check-circle" color={theme.colors.success} />
             </View>
-            <Button 
-              title="Clear API Key" 
-              type="outline" 
+            <Button
+              title="Clear API Key"
+              type="outline"
               buttonStyle={{ borderColor: theme.colors.error }}
               titleStyle={{ color: theme.colors.error }}
               onPress={handleClear}
@@ -115,7 +115,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
             <ListItem.Subtitle>1.0.0 (MVP)</ListItem.Subtitle>
           </ListItem.Content>
         </ListItem>
-         <ListItem containerStyle={{ backgroundColor: 'transparent' }}>
+        <ListItem containerStyle={{ backgroundColor: 'transparent' }}>
           <ListItem.Content>
             <ListItem.Title>Privacy Policy</ListItem.Title>
             <ListItem.Subtitle>Data is stored locally.</ListItem.Subtitle>
