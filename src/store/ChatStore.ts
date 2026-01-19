@@ -11,7 +11,7 @@ export interface Message {
   isStreaming?: boolean;
 }
 
-export type SessionType = 'happy' | 'daily';
+export type SessionType = 'happy' | 'daily' | 'unselected';
 
 class ChatStore {
   messages: Message[] = [];
@@ -43,7 +43,7 @@ class ChatStore {
   }
 
   saveCurrentSession() {
-      if (!this.currentSessionId) return;
+      if (!this.currentSessionId || this.sessionType === 'unselected') return;
       
       const key = `session_${this.currentSessionId}`;
       StorageService.setString(key, JSON.stringify(this.messages));
@@ -87,27 +87,43 @@ class ChatStore {
       }
   }
 
-  startNewSession(type: SessionType) {
-    this.saveCurrentSession(); // Save previous before switch
+  startNewSession(type: SessionType = 'unselected') {
+    // Only save if it was a valid session
+    if (this.sessionType !== 'unselected') {
+        this.saveCurrentSession(); 
+    }
+    
     this.messages = [];
     this.sessionType = type;
     this.currentSessionId = Date.now().toString();
     this.isStreaming = false;
     
-    // Initial Prompt triggers
-    if (type === 'happy') {
-      this.addMessage({
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: "你好呀～我是你的专属觉察助手😘 今天有没有遇到什么开心的小事？可以先和我分享**第一件**开心的事哦～",
-        timestamp: Date.now(),
-      });
-    } else {
-         // Daily record: maybe just a timestamp marker?
-         // User requirement: 2.5.1 "Entrance trigger... input becomes 'Input here...'" 
-         // But UI handles placeholder.
+    if (type !== 'unselected') {
+        this.initializeSession(type);
     }
-    this.saveCurrentSession();
+  }
+
+  initializeSession(type: SessionType) {
+      this.sessionType = type;
+      
+      // Initial Prompt triggers
+      if (type === 'happy') {
+        this.addMessage({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: "你好呀～我是你的专属觉察助手😘 今天有没有遇到什么开心的小事？可以先和我分享**第一件**开心的事哦～",
+          timestamp: Date.now(),
+        });
+      } else {
+           // Daily record greeting
+           this.addMessage({
+             id: Date.now().toString(),
+             role: 'assistant',
+             content: "我是你的生活记录助手📝。无论是日常琐事还是重要时刻，随时发给我，我会为你妥善记录。",
+             timestamp: Date.now(),
+           });
+      }
+      this.saveCurrentSession();
   }
 
   addMessage(msg: Message) {
@@ -129,11 +145,6 @@ class ChatStore {
     // 2. Prepare Context
     const contextMessages = this.messages.map(m => ({ role: m.role, content: m.content }));
     
-    // Daily Record Logic: NO immediate AI response unless Nightly Summary triggered manually or auto
-    if (this.sessionType === 'daily') {
-        return; 
-    }
-
     // 3. Start Streaming AI Response
     this.isStreaming = true;
     const aiMsgId = (Date.now() + 1).toString();
@@ -147,7 +158,15 @@ class ChatStore {
     };
     this.addMessage(aiMessage); // This calls saveCurrentSession, which saves empty AI msg
 
-    const systemPrompt = "你是一位温柔的心理疗愈助手，擅长用亲切的语气和用户互动，回复需包含表情符号和适量富文本格式（加粗/斜体）。请根据用户分享的开心事，按以下要求生成反馈：1. 提及至少1个具体的开心点，用加粗突出；2. 语言温暖有感染力，搭配合适的表情（如✨😆🥰）；3. 结尾用一句简短的鼓励语，可加斜体；4. 总字数控制在50-80字。";
+    let systemPrompt = "";
+    if (this.sessionType === 'happy') {
+        systemPrompt = "你是一位温柔的心理疗愈助手，擅长用亲切的语气和用户互动，回复需包含表情符号和适量富文本格式（加粗/斜体）。请根据用户分享的开心事，按以下要求生成反馈：1. 提及至少1个具体的开心点，用加粗突出；2. 语言温暖有感染力，搭配合适的表情（如✨😆🥰）；3. 结尾用一句简短的鼓励语，可加斜体；4. 总字数控制在50-80字。";
+    } else {
+        // Daily Record Prompt
+        systemPrompt = "你是一位耐心的生活记录陪伴者。请注意：1. 你的角色是倾听者，而非建议者；2. 对用户的记录给予简单、温暖的反馈即可；3. 严禁使用夸张的赞美或过于激动的语气；4. 严禁使用加粗/标题等复杂格式，仅使用纯文本和少量Emoji。";
+    }
+    
+    console.log(`[ChatStore] sendMessage - Type: ${this.sessionType}, Prompt: ${systemPrompt}`);
 
     const fullMessages = [
         { role: 'system', content: systemPrompt },
@@ -225,6 +244,8 @@ class ChatStore {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `用户会话记录：${records}` }
       ];
+      console.log("[ChatStore] Generating Summary. Records:", records);
+      console.log("[ChatStore] Summary System Prompt:", systemPrompt);
 
       this.abortController = LLMService.streamCompletion(
         promptMessages, // Note: Not sending full history usually for specific summary, but here we summarize *records*
@@ -270,9 +291,9 @@ class ChatStore {
       // 22:00 - 23:30 (Requirement)
       // Check if already summarized (last message is assistant?)
       const lastMsg = this.messages[this.messages.length - 1];
-      const hasSummary = lastMsg.role === 'assistant'; // Simple check
+      const hasSummary = lastMsg.role === 'assistant' && lastMsg.content.includes("复盘");
       
-      return (hour >= 22 || (hour === 23 && new Date().getMinutes() <= 30)) && !hasSummary;
+      return (hour >= 20 || (hour === 23 && new Date().getMinutes() <= 30)) && !hasSummary;
   }
 }
 
