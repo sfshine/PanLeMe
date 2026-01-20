@@ -149,13 +149,12 @@ export const ChatScreen = observer(({ navigation }: any) => {
         <>
           <FlatList
             ref={flatListRef}
-            data={chatStore.messages.slice()}
+            data={chatStore.messages.slice().reverse()}
             extraData={chatStore.messages.length}
             keyExtractor={item => item.id}
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
             contentContainerStyle={styles.listContent}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            inverted
             style={{ flex: 1 }}
           />
 
@@ -254,8 +253,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   listContent: {
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   inputWrapper: {
     paddingHorizontal: 16,
