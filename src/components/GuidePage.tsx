@@ -19,7 +19,7 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
                 </View>
 
                 <Text style={[styles.subtitle, { color: theme.colors.grey2 }]}>
-                    记录生活美好，吾日三省吾身
+                    盘点生活美好，盘出精彩人生
                 </Text>
             </View>
 

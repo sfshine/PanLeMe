@@ -1,8 +1,8 @@
 import { MMKV } from 'react-native-mmkv';
 
 export const storage = new MMKV({
-  id: 'sanxing-storage',
-  encryptionKey: 'sanxing-encryption-key',
+  id: 'panleme-storage',
+  encryptionKey: 'panleme-encryption-key',
 });
 
 export const StorageKeys = {

@@ -77,9 +77,9 @@ export const ChatScreen = observer(({ navigation }: any) => {
   };
 
   const getSessionTitle = () => {
-    if (chatStore.sessionType === 'unselected') return '三省';
+    if (chatStore.sessionType === 'unselected') return '盘了么';
     const bot = Bots.find(b => b.id === chatStore.sessionType);
-    return bot ? bot.title : '三省';
+    return bot ? bot.title : '盘了么';
   };
 
   return (
