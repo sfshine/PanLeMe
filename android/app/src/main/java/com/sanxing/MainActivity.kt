@@ -15,6 +15,7 @@ class MainActivity : ReactActivity() {
   override fun getMainComponentName(): String = "PanLeMe"
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    setTheme(R.style.AppTheme)
     super.onCreate(null)
   }
 
