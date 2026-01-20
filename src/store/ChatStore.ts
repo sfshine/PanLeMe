@@ -111,8 +111,8 @@ class ChatStore {
             role: 'assistant',
             content: bot.initialMessage,
             timestamp: Date.now(),
-            type: 'streaming',
-            status: 'pending'
+            type: 'text',
+            shouldAnimate: true
          });
       }
       this.saveCurrentSession();
@@ -292,6 +292,16 @@ class ChatStore {
     if (msg) msg.content = content;
   }
   
+
+  
+  markMessageAnimationCompleted(id: string) {
+      const msg = this.messages.find(m => m.id === id);
+      if (msg) {
+          msg.shouldAnimate = false;
+          this.saveCurrentSession();
+      }
+  }
+
   async generateSummary() {
       if (this.sessionType !== 'daily' || !userStore.apiKey) return;
       

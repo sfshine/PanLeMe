@@ -3,6 +3,7 @@ export interface BaseMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+  shouldAnimate?: boolean;
 }
 
 export type StreamStatus = 'pending' | 'loading' | 'completed' | 'failed' | 'interrupted';
