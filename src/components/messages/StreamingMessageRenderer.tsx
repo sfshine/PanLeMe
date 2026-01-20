@@ -27,7 +27,10 @@ const StreamingMessageComponent = observer(({ message, theme }: { message: Messa
         }
     }, [msg.id, msg.status, msg.content]);
 
-    const isStreaming = msg.status === 'loading';
+    // We treat 'completed'/'failed'/'interrupted' as "streaming=true" for the TypewriterText component
+    // because that tells it to render content immediately without the character-by-character animation.
+    // We only want the animation (via stream updates) or immediate render, never the post-stream re-typing.
+    const isStreaming = msg.status === 'loading' || msg.status === 'completed' || msg.status === 'failed' || msg.status === 'interrupted';
 
     // If interrupted, we treat it as not streaming.
     // We can add a visual indicator for interrupted or failed states if needed.
