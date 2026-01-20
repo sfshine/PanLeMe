@@ -28,6 +28,33 @@ export const ChatScreen = observer(({ navigation }: any) => {
     checkSummary();
   }, [chatStore.messages.length]);
 
+  useEffect(() => {
+    if (chatStore.apiErrorStatus) {
+      const status = chatStore.apiErrorStatus;
+      chatStore.clearApiError();
+
+      let title = '';
+      let message = '';
+
+      if (status === 401) {
+        title = '认证失败';
+        message = 'API key 错误，认证失败。请检查您的 API key 是否正确，如没有 API key，请先创建 API key。';
+      } else if (status === 402) {
+        title = '余额不足';
+        message = '账号余额不足。请确认账户余额，并前往充值页面进行充值。';
+      }
+
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: '取消', style: 'cancel' },
+          { text: '去配置', onPress: () => navigation.navigate('Settings') }
+        ]
+      );
+    }
+  }, [chatStore.apiErrorStatus]);
+
   const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
   const [showBotSelector, setShowBotSelector] = useState(false);
 

@@ -110,7 +110,9 @@ export class LLMService {
         if (xhr.status >= 200 && xhr.status < 300) {
             onFinish();
         } else {
-            onError(new Error(`API Error: ${xhr.status} ${xhr.responseText}`));
+            const error: any = new Error(`API Error: ${xhr.status} ${xhr.responseText}`);
+            error.status = xhr.status;
+            onError(error);
         }
       }
     };

@@ -12,6 +12,7 @@ class ChatStore {
   sessionType: SessionType = 'happy';
   currentSessionId: string | null = null;
   abortController: (() => void) | null = null;
+  apiErrorStatus: number | null = null;
 
   sessions: Session[] = [];
   
@@ -270,22 +271,28 @@ class ChatStore {
                const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
               if(currentMsgIndex !== -1) {
                   const currentMsg = this.messages[currentMsgIndex];
-                  if (currentMsg.type === 'streaming') {
-                      currentMsg.status = 'failed';
-                      // Append error to content or replace? Appending seems safer for now
-                      // Also commit buffer so far
-                      const buffer = this.streamBuffers.get(messageId) || '';
-                      currentMsg.content = buffer + `\n[Error: ${err.message}]`;
-                  }
-              }
-               this.streamBuffers.delete(messageId);
-               this.saveCurrentSession();
-          });
-        },
-        'deepseek-chat',
-        userStore.baseUrl
-      );
-  }
+                    if (currentMsg.type === 'streaming') {
+                        currentMsg.status = 'failed';
+                        const buffer = this.streamBuffers.get(messageId) || '';
+                        currentMsg.content = buffer + `\n[Error: ${err.message}]`;
+                        
+                        if (err.status === 401 || err.status === 402) {
+                            this.apiErrorStatus = err.status;
+                        }
+                    }
+                }
+                 this.streamBuffers.delete(messageId);
+                 this.saveCurrentSession();
+            });
+          },
+          'deepseek-chat',
+          userStore.baseUrl
+        );
+    }
+
+    clearApiError() {
+        this.apiErrorStatus = null;
+    }
 
   updateMessage(id: string, content: string) {
     const msg = this.messages.find(m => m.id === id);
@@ -423,6 +430,10 @@ class ChatStore {
                         msg.status = 'failed';
                         const buffer = this.streamBuffers.get(aiMsgId) || '';
                         msg.content = buffer + `\n[Summary Error: ${err.message}]`;
+
+                        if (err.status === 401 || err.status === 402) {
+                            this.apiErrorStatus = err.status;
+                        }
                     }
                 }
                 this.streamBuffers.delete(aiMsgId);
