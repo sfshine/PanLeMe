@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Text, Icon, useTheme } from '@rneui/themed';
 
 import { Bots } from '../config/Bots';
@@ -14,8 +14,12 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             {/* Logo/Title Area */}
             <View style={styles.logoContainer}>
-                <View style={[styles.logoCircle, { backgroundColor: (theme.colors as any).brandSurface || 'rgba(16, 163, 127, 0.1)' }]}>
-                    <Icon name="star" type="feather" color={theme.colors.primary} size={40} />
+                <View style={styles.logoCircle}>
+                    <Image
+                        source={require('../../icon.png')}
+                        style={styles.logoImage}
+                        resizeMode="contain"
+                    />
                 </View>
 
                 <Text style={[styles.subtitle, { color: theme.colors.grey2 }]}>
@@ -69,12 +73,16 @@ const styles = StyleSheet.create({
         marginBottom: 48,
     },
     logoCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 100,
+        height: 100,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 20,
     },
     title: {
         fontSize: 28,

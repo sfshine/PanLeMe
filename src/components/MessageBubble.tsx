@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { Text, Icon } from '@rneui/themed';
 import { Message } from '../types/ChatTypes';
 import { MessageContent } from './messages/MessageRegistry';
@@ -25,12 +25,15 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
             {/* Avatar */}
             <View style={[
                 styles.avatar,
-                { backgroundColor: isUser ? theme.colors.primary : ((theme.colors as any).brandSurface || theme.colors.grey4) }
+                { backgroundColor: isUser ? theme.colors.primary : 'transparent' }
             ]}>
                 {isUser ? (
                     <Text style={styles.avatarText}>你</Text>
                 ) : (
-                    <Icon name="star" type="feather" color={theme.colors.primary} size={16} />
+                    <Image
+                        source={require('../../icon.png')}
+                        style={styles.avatarImage}
+                    />
                 )}
             </View>
 
@@ -58,6 +61,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 16,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         color: '#fff',

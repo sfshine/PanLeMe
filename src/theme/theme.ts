@@ -3,7 +3,7 @@ import { createTheme } from '@rneui/themed';
 // ChatGPT Style Theme
 export const theme = createTheme({
   lightColors: {
-    primary: '#10a37f',
+    primary: '#19c37d',
     secondary: '#19c37d',
     background: '#FFFFFF',
     white: '#FFFFFF',
