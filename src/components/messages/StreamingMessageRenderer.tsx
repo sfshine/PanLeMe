@@ -9,12 +9,23 @@ import { Text } from '@rneui/themed';
 
 const StreamingMessageComponent = observer(({ message, theme }: { message: Message, theme: any }) => {
     const msg = message as StreamingMessage;
+    const [currentContent, setCurrentContent] = React.useState(msg.content);
 
     useEffect(() => {
-        if (msg.status === 'pending') {
-            chatStore.startStreaming(msg.id);
+        // Always sync with message content initially (e.g. if loaded from history)
+        setCurrentContent(msg.content);
+
+        if (msg.status === 'loading' || msg.status === 'pending') {
+            const unsub = chatStore.subscribeToStream(msg.id, (content) => {
+                setCurrentContent(content);
+            });
+
+            if (msg.status === 'pending') {
+                chatStore.startStreaming(msg.id);
+            }
+            return unsub;
         }
-    }, [msg.id, msg.status]);
+    }, [msg.id, msg.status, msg.content]);
 
     const isStreaming = msg.status === 'loading';
 
@@ -24,7 +35,7 @@ const StreamingMessageComponent = observer(({ message, theme }: { message: Messa
     return (
         <View>
             <TypewriterText
-                content={msg.content}
+                content={currentContent}
                 isStreaming={isStreaming}
                 theme={theme}
                 speed={isStreaming ? 30 : 0}

@@ -13,6 +13,10 @@ class ChatStore {
   abortController: (() => void) | null = null;
 
   sessions: Session[] = [];
+  
+  // Optimization: Stream buffers and listeners to avoid frequent MobX updates
+  private streamBuffers: Map<string, string> = new Map();
+  private streamListeners: Map<string, (content: string) => void> = new Map();
 
   constructor() {
     makeAutoObservable(this);
@@ -144,7 +148,7 @@ class ChatStore {
     const aiMessage: Message = {
       id: aiMsgId,
       role: 'assistant',
-      content: '', 
+      content: '', // Start empty, will be filled on completion
       timestamp: Date.now(),
       type: 'streaming',
       status: 'pending'
@@ -155,6 +159,26 @@ class ChatStore {
     this.addMessage(aiMessage); 
   }
 
+  subscribeToStream(id: string, callback: (content: string) => void): () => void {
+      this.streamListeners.set(id, callback);
+      
+      // If there's already buffered content, send it immediately
+      if (this.streamBuffers.has(id)) {
+          callback(this.streamBuffers.get(id) || '');
+      }
+      
+      return () => {
+          this.streamListeners.delete(id);
+      };
+  }
+
+  private notifyListeners(id: string, content: string) {
+      const listener = this.streamListeners.get(id);
+      if (listener) {
+          listener(content);
+      }
+  }
+
   cancelAllStreams() {
       // Abort current request
       if (this.abortController) {
@@ -162,6 +186,8 @@ class ChatStore {
           this.abortController = null;
       }
       this.isStreaming = false;
+      this.streamBuffers.clear();
+      // We don't clear listeners here, they will unsubscribe themselves or getting interrupted status update
 
       // Update statuses
       runInAction(() => {
@@ -185,6 +211,10 @@ class ChatStore {
           msg.status = 'loading';
           this.isStreaming = true; // Global flag maybe still useful for UI indicators
       });
+      
+      // Initialize buffer
+      this.streamBuffers.set(messageId, '');
+      this.notifyListeners(messageId, '');
 
       // Prepare Context (excluding this message and newer ones, although mostly this is latest)
       // Actually strictly speaking we should send messages up to this point.
@@ -209,6 +239,7 @@ class ChatStore {
              msg.status = 'failed';
              msg.content = "Error: API Key missing.";
              this.saveCurrentSession();
+             this.streamBuffers.delete(messageId);
           });
           return;
       }
@@ -217,12 +248,11 @@ class ChatStore {
         fullMessages,
         userStore.apiKey,
         (delta) => {
-          runInAction(() => {
-              const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
-              if (currentMsgIndex !== -1) {
-                  this.messages[currentMsgIndex].content += delta;
-              }
-          });
+          // Update buffer and notify listener directly
+          // NO MobX action needed for this part
+          const currentBuffer = (this.streamBuffers.get(messageId) || '') + delta;
+          this.streamBuffers.set(messageId, currentBuffer);
+          this.notifyListeners(messageId, currentBuffer);
         },
         () => {
           runInAction(() => {
@@ -232,8 +262,11 @@ class ChatStore {
                   const currentMsg = this.messages[currentMsgIndex];
                   if (currentMsg.type === 'streaming') {
                       currentMsg.status = 'completed';
+                      // Final commit to MobX state
+                      currentMsg.content = this.streamBuffers.get(messageId) || currentMsg.content;
                   }
               }
+              this.streamBuffers.delete(messageId);
               this.saveCurrentSession(); 
           });
         },
@@ -246,9 +279,12 @@ class ChatStore {
                   if (currentMsg.type === 'streaming') {
                       currentMsg.status = 'failed';
                       // Append error to content or replace? Appending seems safer for now
-                      currentMsg.content += `\n[Error: ${err.message}]`;
+                      // Also commit buffer so far
+                      const buffer = this.streamBuffers.get(messageId) || '';
+                      currentMsg.content = buffer + `\n[Error: ${err.message}]`;
                   }
               }
+               this.streamBuffers.delete(messageId);
                this.saveCurrentSession();
           });
         },
@@ -344,12 +380,12 @@ class ChatStore {
         promptMessages,
         userStore.apiKey,
         (delta) => {
-             runInAction(() => {
-                const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-                if (msgIndex !== -1) {
-                    this.messages[msgIndex].content += delta;
-                }
-             });
+            // Buffer logic for summary too?
+            // Yes, let's use the same buffer mechanics for consistency, 
+            // although summary is often not as critical for list scroll.
+            const currentBuffer = (this.streamBuffers.get(aiMsgId) || '') + delta;
+            this.streamBuffers.set(aiMsgId, currentBuffer);
+            this.notifyListeners(aiMsgId, currentBuffer);
         },
         () => {
              runInAction(() => {
@@ -359,8 +395,10 @@ class ChatStore {
                     const msg = this.messages[msgIndex];
                      if (msg.type === 'streaming') {
                         msg.status = 'completed';
+                        msg.content = this.streamBuffers.get(aiMsgId) || msg.content;
                     }
                 }
+                this.streamBuffers.delete(aiMsgId);
                 this.saveCurrentSession();
                 
                 // Update Badge/Title
@@ -379,9 +417,11 @@ class ChatStore {
                     const msg = this.messages[msgIndex];
                      if (msg.type === 'streaming') {
                         msg.status = 'failed';
-                        msg.content += `\n[Summary Error: ${err.message}]`;
+                        const buffer = this.streamBuffers.get(aiMsgId) || '';
+                        msg.content = buffer + `\n[Summary Error: ${err.message}]`;
                     }
                 }
+                this.streamBuffers.delete(aiMsgId);
                 this.saveCurrentSession();
              });
         },
