@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { Input, Button, Text, Icon, useTheme } from '@rneui/themed';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity } from 'react-native';
+import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { chatStore } from '../store/ChatStore';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
@@ -13,31 +13,17 @@ export const ChatScreen = observer(({ navigation }: any) => {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Ensure we have a session on mount or if empty
-    // If no current session, start an unselected one to show Guide Page
     if (!chatStore.currentSessionId) {
       chatStore.startNewSession('unselected');
     }
 
-    // Check for summary
     const checkSummary = () => {
       if (chatStore.needsSummary) {
-        // We should use a custom bubble or toast, but requirements say "Top light hint bubble... AI sends message: Need summary?"
-        // Wait, requirement 2.5.3: "Chat page top pops up light hint bubble... AI sends message... buttons 'Yes' 'Next time'"
-        // Actually it says "AI sends message: Now need...?" logic is:
-        // - User opens chat.
-        // - ChatStore checks time.
-        // - IF time match AND no summary:
-        //   - AI *temporarily* prompts? Or is it a real message?
-        //   - "Chat page top pops up light hint bubble (not blocking)" -> This sounds like a UI overlay, NOT a message bubble.
-        //   - "AI sends message: ..." -> confusing.
-        //   - "Message below has 'Yes' 'Next time'".
-        //   Let's implement a UI Overlay/Banner at top of list.
         setShowSummaryPrompt(true);
       }
     };
     checkSummary();
-  }, [chatStore.messages.length]); // Check when messages change or mount
+  }, [chatStore.messages.length]);
 
   const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
 
@@ -54,31 +40,51 @@ export const ChatScreen = observer(({ navigation }: any) => {
     setInputText('');
   };
 
+  const getSessionTitle = () => {
+    if (chatStore.sessionType === 'unselected') return '三星';
+    return chatStore.sessionType === 'happy' ? '今日小确幸' : '生活记录';
+  };
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
-      <View style={styles.header}>
-        <Button
-          icon={<Icon name="menu" color={theme.colors.black} />}
-          type="clear"
+      {/* ChatGPT Style Header */}
+      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5 }]}>
+        <TouchableOpacity
+          style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-        />
-        <Text h4 style={{ flex: 1, textAlign: 'center', fontSize: 18 }}>
-          {chatStore.sessionType === 'unselected' ? '新会话' : (chatStore.sessionType === 'happy' ? '今日小确幸' : '生活记录')}
-        </Text>
-        <View style={{ width: 40 }} />
+        >
+          <Icon name="menu" color={theme.colors.grey2} size={24} />
+        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
+          <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
+        </View>
+        <TouchableOpacity style={styles.newChatButton}>
+          <Icon name="edit" type="feather" color={theme.colors.grey2} size={20} />
+        </TouchableOpacity>
       </View>
 
       {showSummaryPrompt && (
-        <View style={styles.summaryPrompt}>
-          <Text style={{ flex: 1, fontSize: 13, color: '#333' }}>
+        <View style={[styles.summaryPrompt, { backgroundColor: theme.colors.grey0 }]}>
+          <Text style={[styles.summaryText, { color: theme.colors.black }]}>
             🌙 晚安，需要为你生成今日复盘吗？
           </Text>
-          <Button size="sm" title="好呀" onPress={() => handleSummaryAction('yes')} />
-          <Button size="sm" type="clear" title="下次" onPress={() => handleSummaryAction('no')} />
+          <TouchableOpacity
+            style={[styles.summaryButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => handleSummaryAction('yes')}
+          >
+            <Text style={styles.summaryButtonText}>好呀</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.summaryButtonClear}
+            onPress={() => handleSummaryAction('no')}
+          >
+            <Text style={[styles.summaryButtonTextClear, { color: theme.colors.grey2 }]}>下次</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -88,31 +94,42 @@ export const ChatScreen = observer(({ navigation }: any) => {
         <>
           <FlatList
             ref={flatListRef}
-            data={chatStore.messages.slice()} // MobX array slice for update
+            data={chatStore.messages.slice()}
             extraData={chatStore.messages.length}
             keyExtractor={item => item.id}
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
             contentContainerStyle={styles.listContent}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            style={{ flex: 1 }}
           />
 
-          <View style={[styles.inputContainer, { backgroundColor: theme.colors.white, borderTopColor: theme.colors.grey1 }]}>
-            <Input
-              placeholder={chatStore.sessionType === 'daily' ? "输入此刻想记录的内容吧" : "分享你的开心事..."}
-              value={inputText}
-              onChangeText={setInputText}
-              containerStyle={{ flex: 1 }}
-              inputContainerStyle={{ borderBottomWidth: 0 }}
-              rightIcon={
-                <Icon
-                  name="send"
-                  color={theme.colors.primary}
-                  onPress={handleSend}
-                  disabled={chatStore.isStreaming}
-                />
-              }
-            />
+          {/* ChatGPT Style Input */}
+          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.inputContainer, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}>
+              <TextInput
+                placeholder={chatStore.sessionType === 'daily' ? "输入此刻想记录的内容吧" : "分享你的开心事..."}
+                placeholderTextColor={theme.colors.grey2}
+                value={inputText}
+                onChangeText={setInputText}
+                style={[styles.textInput, { color: theme.colors.black }]}
+                multiline
+                maxLength={4000}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  { backgroundColor: inputText.trim() ? theme.colors.primary : theme.colors.grey5 }
+                ]}
+                onPress={handleSend}
+                disabled={!inputText.trim() || chatStore.isStreaming}
+              >
+                <Icon name="arrow-up" type="feather" color="#fff" size={18} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.disclaimer, { color: theme.colors.grey2 }]}>
+              三星可能会出错，请核实重要信息。
+            </Text>
           </View>
         </>
       )}
@@ -127,35 +144,96 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 40, // Status bar safe area approximation
-    paddingHorizontal: 10,
-    height: 90,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: 'white'
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 0.5,
+  },
+  menuButton: {
+    padding: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  newChatButton: {
+    padding: 8,
   },
   listContent: {
-    padding: 10,
+    paddingTop: 10,
     paddingBottom: 20,
+  },
+  inputWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 34,
   },
   inputContainer: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 52,
+    maxHeight: 200,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    maxHeight: 160,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  sendButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    padding: 5,
-    borderTopWidth: 1,
-    paddingBottom: 30 // Safe area bottom
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  disclaimer: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
   },
   summaryPrompt: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF9C4', // Light yellow
-    padding: 10,
-    margin: 10,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 12,
+  },
+  summaryText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  summaryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  summaryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  summaryButtonClear: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginLeft: 4,
+  },
+  summaryButtonTextClear: {
+    fontSize: 14,
   },
 });

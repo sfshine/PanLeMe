@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Button, Text, ListItem, Icon, Avatar, Divider, useTheme } from '@rneui/themed';
-import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Text, Icon, useTheme } from '@rneui/themed';
+import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { observer } from 'mobx-react-lite';
 import { chatStore } from '../store/ChatStore';
 import { userStore } from '../store/UserStore';
@@ -10,7 +10,7 @@ export const CustomDrawerContent = observer((props: any) => {
     const { theme } = useTheme();
 
     const handleNewSession = () => {
-        chatStore.startNewSession(); // Defaults to 'unselected'
+        chatStore.startNewSession();
         props.navigation.closeDrawer();
     };
 
@@ -20,74 +20,127 @@ export const CustomDrawerContent = observer((props: any) => {
     };
 
     const handleDeleteSession = (id: string) => {
-        Alert.alert('Delete', 'Delete this session?', [
-            { text: 'Cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => chatStore.deleteSession(id) }
+        Alert.alert('删除', '确定删除这个会话吗？', [
+            { text: '取消' },
+            { text: '删除', style: 'destructive', onPress: () => chatStore.deleteSession(id) }
         ]);
     };
 
     return (
-        <View style={{ flex: 1 }}>
-            <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-                <Button
-                    title="New Session"
-                    icon={{ name: 'plus', type: 'feather', color: 'white' }}
-                    buttonStyle={{ borderRadius: 20, marginHorizontal: 20 }}
+        <View style={[styles.container, { backgroundColor: theme.colors.grey3 }]}>
+            {/* New Chat Button */}
+            <View style={styles.header}>
+                <TouchableOpacity
+                    style={[styles.newChatButton, { borderColor: theme.colors.grey5 }]}
                     onPress={handleNewSession}
-                />
+                    activeOpacity={0.7}
+                >
+                    <Icon name="plus" type="feather" color={theme.colors.black} size={18} />
+                    <Text style={[styles.newChatText, { color: theme.colors.black }]}>新会话</Text>
+                </TouchableOpacity>
             </View>
 
-            <DrawerContentScrollView {...props}>
-                <Text style={styles.sectionTitle}>History</Text>
-                {chatStore.sessions.map((s) => (
-                    <ListItem
-                        key={s.id}
-                        onPress={() => handleSelectSession(s.id)}
-                        onLongPress={() => handleDeleteSession(s.id)}
-                        containerStyle={{ backgroundColor: chatStore.currentSessionId === s.id ? theme.colors.grey0 : 'transparent' }}
+            {/* Sessions List */}
+            <DrawerContentScrollView {...props} style={styles.scrollView}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>历史记录</Text>
+                {chatStore.sessions.map((session) => (
+                    <TouchableOpacity
+                        key={session.id}
+                        style={[
+                            styles.sessionItem,
+                            chatStore.currentSessionId === session.id && { backgroundColor: theme.colors.grey4 }
+                        ]}
+                        onPress={() => handleSelectSession(session.id)}
+                        onLongPress={() => handleDeleteSession(session.id)}
+                        activeOpacity={0.7}
                     >
                         <Icon
-                            name={s.type === 'happy' ? 'smile' : 'book'}
+                            name={session.type === 'happy' ? 'smile' : 'book'}
                             type="feather"
-                            color={s.type === 'happy' ? theme.colors.success : theme.colors.primary}
+                            color={theme.colors.grey2}
                             size={16}
                         />
-                        <ListItem.Content>
-                            <ListItem.Title style={{ fontSize: 14 }}>{s.title}</ListItem.Title>
-                            <ListItem.Subtitle style={{ fontSize: 10 }}>{new Date(s.timestamp).toLocaleDateString()}</ListItem.Subtitle>
-                        </ListItem.Content>
-                    </ListItem>
+                        <Text
+                            style={[styles.sessionTitle, { color: theme.colors.black }]}
+                            numberOfLines={1}
+                        >
+                            {session.title}
+                        </Text>
+                    </TouchableOpacity>
                 ))}
             </DrawerContentScrollView>
 
-            <View style={styles.footer}>
-                <Button
-                    type="clear"
-                    icon={{ name: 'settings', color: theme.colors.grey2 }}
-                    title="Settings"
-                    titleStyle={{ color: theme.colors.grey2 }}
+            {/* Footer */}
+            <View style={[styles.footer, { borderTopColor: theme.colors.grey5 }]}>
+                <TouchableOpacity
+                    style={styles.footerItem}
                     onPress={() => props.navigation.navigate('Settings')}
-                />
+                    activeOpacity={0.7}
+                >
+                    <Icon name="settings" type="feather" color={theme.colors.grey2} size={18} />
+                    <Text style={[styles.footerText, { color: theme.colors.grey2 }]}>设置</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
 });
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
     header: {
-        paddingTop: 50,
-        paddingBottom: 20,
+        paddingTop: 60,
+        paddingHorizontal: 12,
+        paddingBottom: 16,
+    },
+    newChatButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        gap: 12,
+    },
+    newChatText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    scrollView: {
+        flex: 1,
     },
     sectionTitle: {
-        marginLeft: 20,
-        marginBottom: 10,
         fontSize: 12,
-        color: '#888',
-        fontWeight: 'bold'
+        fontWeight: '600',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    sessionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        marginHorizontal: 8,
+        borderRadius: 6,
+        gap: 12,
+    },
+    sessionTitle: {
+        flex: 1,
+        fontSize: 14,
     },
     footer: {
-        padding: 20,
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0'
-    }
+        padding: 12,
+    },
+    footerItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        gap: 12,
+    },
+    footerText: {
+        fontSize: 14,
+    },
 });
