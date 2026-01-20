@@ -25,12 +25,12 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
             {/* Avatar */}
             <View style={[
                 styles.avatar,
-                { backgroundColor: isUser ? theme.colors.primary : theme.colors.grey4 }
+                { backgroundColor: isUser ? theme.colors.primary : ((theme.colors as any).brandSurface || theme.colors.grey4) }
             ]}>
                 {isUser ? (
                     <Text style={styles.avatarText}>你</Text>
                 ) : (
-                    <Icon name="star" type="feather" color="#10a37f" size={16} />
+                    <Icon name="star" type="feather" color={theme.colors.primary} size={16} />
                 )}
             </View>
 

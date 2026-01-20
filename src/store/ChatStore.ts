@@ -13,6 +13,7 @@ class ChatStore {
     currentSessionId: string | null = null;
     abortController: (() => void) | null = null;
     apiErrorStatus: number | null = null;
+    hasShownSummaryPrompt: boolean = false;
 
     sessions: Session[] = [];
 
@@ -80,6 +81,7 @@ class ChatStore {
                 this.currentSessionId = id;
                 const session = this.sessions.find(s => s.id === id);
                 if (session) this.sessionType = session.type;
+                this.hasShownSummaryPrompt = false;
             } catch (e) { console.error(e) }
         }
     }
@@ -103,6 +105,7 @@ class ChatStore {
         this.sessionType = type;
         this.currentSessionId = Date.now().toString();
         this.isStreaming = false;
+        this.hasShownSummaryPrompt = false;
 
         if (type !== 'unselected') {
             this.initializeSession(type);
@@ -124,6 +127,10 @@ class ChatStore {
             });
         }
         this.saveCurrentSession();
+    }
+
+    markSummaryPromptShown() {
+        this.hasShownSummaryPrompt = true;
     }
 
     addMessage(msg: Message) {

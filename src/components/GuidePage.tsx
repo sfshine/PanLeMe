@@ -14,7 +14,7 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             {/* Logo/Title Area */}
             <View style={styles.logoContainer}>
-                <View style={[styles.logoCircle, { backgroundColor: theme.colors.grey4 }]}>
+                <View style={[styles.logoCircle, { backgroundColor: (theme.colors as any).brandSurface || 'rgba(16, 163, 127, 0.1)' }]}>
                     <Icon name="star" type="feather" color={theme.colors.primary} size={40} />
                 </View>
 
@@ -28,11 +28,11 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
                 {Bots.map((bot) => (
                     <TouchableOpacity
                         key={bot.id}
-                        style={[styles.card, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}
+                        style={[styles.card, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey4 }]}
                         onPress={() => onSelect(bot.id)}
                         activeOpacity={0.7}
                     >
-                        <View style={[styles.cardIcon, { backgroundColor: 'rgba(16, 163, 127, 0.15)' }]}>
+                        <View style={[styles.cardIcon, { backgroundColor: (theme.colors as any).brandSurface || 'rgba(16, 163, 127, 0.1)' }]}>
                             <Icon name={bot.icon} type="feather" size={24} color={theme.colors.primary} />
                         </View>
                         <View style={styles.cardContent}>
@@ -43,7 +43,7 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
                                 {bot.description}
                             </Text>
                         </View>
-                        <Icon name="chevron-right" type="feather" size={20} color={theme.colors.grey2} />
+                        <Icon name="chevron-right" type="feather" size={20} color={theme.colors.grey4} />
                     </TouchableOpacity>
                 ))}
             </View>

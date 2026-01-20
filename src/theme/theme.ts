@@ -3,33 +3,35 @@ import { createTheme } from '@rneui/themed';
 // ChatGPT Style Theme
 export const theme = createTheme({
   lightColors: {
-    primary: '#10a37f', // ChatGPT green
+    primary: '#10a37f',
     secondary: '#19c37d',
-    background: '#343541', // Main chat area
+    background: '#FFFFFF',
     white: '#FFFFFF',
-    black: '#ECECF1',
-    grey0: '#444654', // AI message background
-    grey1: '#40414f', // Input background
-    grey2: '#8e8ea0', // Secondary text
-    grey3: '#202123', // Sidebar background
-    grey4: '#2A2B32', // Hover states
-    grey5: '#565869', // Borders
+    black: '#1f2937', // Deeper blue-grey for text
+    grey0: '#F7F7F8', // Message surface
+    grey1: '#FFFFFF', // Input surface
+    grey2: '#6b7280', // Medium grey text
+    grey3: '#f3f4f6', // Sidebar/Surface
+    grey4: '#e5e7eb', // Borders
+    grey5: '#d1d5db', // Stronger borders
     success: '#10a37f',
     error: '#ef4444',
     warning: '#f59e0b',
+    //@ts-ignore - Adding custom color for icon backgrounds
+    brandSurface: 'rgba(16, 163, 127, 0.1)',
   },
   darkColors: {
     primary: '#10a37f',
     secondary: '#19c37d',
-    background: '#343541',
+    background: '#1a1a1e',
     white: '#FFFFFF',
-    black: '#ECECF1',
-    grey0: '#444654',
-    grey1: '#40414f',
-    grey2: '#8e8ea0',
+    black: '#f9fafb',
+    grey0: '#2a2a2e',
+    grey1: '#3a3a3e',
+    grey2: '#9ca3af',
     grey3: '#202123',
-    grey4: '#2A2B32',
-    grey5: '#565869',
+    grey4: '#374151',
+    grey5: '#4b5563',
     success: '#10a37f',
     error: '#ef4444',
     warning: '#f59e0b',
@@ -37,19 +39,22 @@ export const theme = createTheme({
   components: {
     Button: {
       raised: false,
-      radius: 6,
+      radius: 8,
     },
     Text: {
       style: {
         fontFamily: 'System',
-        color: '#ECECF1',
+        color: '#1f2937',
       },
     },
     Input: {
       inputStyle: {
-        color: '#ECECF1',
+        color: '#1f2937',
       },
-      placeholderTextColor: '#8e8ea0',
+      placeholderTextColor: '#9ca3af',
+      inputContainerStyle: {
+        borderBottomWidth: 0,
+      },
     },
   },
 });

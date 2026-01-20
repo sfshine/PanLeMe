@@ -71,7 +71,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>设置</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.black }]}>设置</Text>
         </View>
 
         <View style={styles.headerRightPlaceholder} />
@@ -79,12 +79,12 @@ export const SettingsScreen = observer(({ navigation }: any) => {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.grey3 }]}>API 配置</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>API 配置</Text>
 
           {userStore.isConfigured ? (
             <View style={[styles.configuredContainer, { backgroundColor: theme.colors.grey0 }]}>
               <View style={styles.keyDisplay}>
-                <Text style={[styles.keyText, { color: '#FFFFFF' }]}>
+                <Text style={[styles.keyText, { color: theme.colors.black }]}>
                   Key: {userStore.apiKey?.slice(0, 3)}...{userStore.apiKey?.slice(-4)}
                 </Text>
                 <Icon name="check-circle" type="material" color={theme.colors.success} size={20} />
@@ -114,12 +114,12 @@ export const SettingsScreen = observer(({ navigation }: any) => {
                   />
                 }
                 label="DeepSeek API Key"
-                labelStyle={{ color: theme.colors.grey3, fontSize: 14, fontWeight: '500' }}
-                inputStyle={{ color: '#FFFFFF' }}
+                labelStyle={{ color: theme.colors.grey2, fontSize: 14, fontWeight: '500' }}
+                inputStyle={{ color: theme.colors.black }}
                 inputContainerStyle={{ borderBottomWidth: 1, borderColor: theme.colors.grey5 }}
                 containerStyle={{ paddingHorizontal: 0 }}
               />
-              <Text style={[styles.hint, { color: theme.colors.grey3 }]}>
+              <Text style={[styles.hint, { color: theme.colors.grey2 }]}>
                 API Key 仅存储在本地设备中，绝不会上传到我们的服务器。
               </Text>
               <Button
@@ -136,17 +136,17 @@ export const SettingsScreen = observer(({ navigation }: any) => {
         <Divider style={{ marginVertical: 24, backgroundColor: theme.colors.grey5 }} />
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.grey3 }]}>关于</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>关于</Text>
           <ListItem bottomDivider containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
-              <ListItem.Title style={{ color: '#FFFFFF' }}>版本</ListItem.Title>
-              <ListItem.Subtitle style={{ color: theme.colors.grey3 }}>1.0.0 (MVP)</ListItem.Subtitle>
+              <ListItem.Title style={{ color: theme.colors.black }}>版本</ListItem.Title>
+              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>1.0.0 (MVP)</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
           <ListItem containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
-              <ListItem.Title style={{ color: '#FFFFFF' }}>隐私政策</ListItem.Title>
-              <ListItem.Subtitle style={{ color: theme.colors.grey3 }}>数据存储在本地。</ListItem.Subtitle>
+              <ListItem.Title style={{ color: theme.colors.black }}>隐私政策</ListItem.Title>
+              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>数据存储在本地。</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
         </View>

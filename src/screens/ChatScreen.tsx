@@ -16,6 +16,10 @@ export const ChatScreen = observer(({ navigation }: any) => {
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
+  const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
+  const [summaryHeight, setSummaryHeight] = useState(0);
+  const [showBotSelector, setShowBotSelector] = useState(false);
+
   useEffect(() => {
     if (!chatStore.currentSessionId) {
       chatStore.startNewSession('unselected');
@@ -35,14 +39,17 @@ export const ChatScreen = observer(({ navigation }: any) => {
       // But dependency is messages.length.
       // Let's just set it to true if needed.
       if (chatStore.needsSummary) {
-        setShowSummaryPrompt(true);
+        if (!chatStore.hasShownSummaryPrompt) {
+          setShowSummaryPrompt(true);
+          chatStore.markSummaryPromptShown();
+        }
       } else {
         // Safe to hide if conditions no longer met (e.g. time passed, or summary generated)
         setShowSummaryPrompt(false);
       }
     };
     checkSummary();
-  }, [chatStore.messages.length, chatStore.sessionType]);
+  }, [chatStore.messages.length, chatStore.sessionType, chatStore.hasShownSummaryPrompt]);
 
   useEffect(() => {
     if (chatStore.apiErrorStatus) {
@@ -71,9 +78,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
     }
   }, [chatStore.apiErrorStatus]);
 
-  const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
-  const [summaryHeight, setSummaryHeight] = useState(0);
-  const [showBotSelector, setShowBotSelector] = useState(false);
+
 
   const handleSummaryAction = (action: 'yes' | 'no') => {
     setShowSummaryPrompt(false);
@@ -211,7 +216,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: headerHeight + (showSummaryPrompt ? summaryHeight + 16 : 8) }
+              { paddingBottom: headerHeight + 8 }
             ]}
             inverted
             style={{ flex: 1 }}
@@ -261,10 +266,10 @@ export const ChatScreen = observer(({ navigation }: any) => {
             {Bots.map(bot => (
               <TouchableOpacity
                 key={bot.id}
-                style={[styles.botOption, { borderBottomColor: theme.colors.grey5 }]}
+                style={[styles.botOption, { borderBottomColor: theme.colors.grey4 }]}
                 onPress={() => handleBotSelect(bot.id)}
               >
-                <View style={[styles.botIconSmall, { backgroundColor: 'rgba(16, 163, 127, 0.1)' }]}>
+                <View style={[styles.botIconSmall, { backgroundColor: (theme.colors as any).brandSurface || 'rgba(16, 163, 127, 0.1)' }]}>
                   <Icon name={bot.icon} type="feather" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.botOptionContent}>
