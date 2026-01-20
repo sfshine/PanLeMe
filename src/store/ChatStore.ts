@@ -105,6 +105,8 @@ class ChatStore {
           role: 'assistant',
           content: Prompts.Happy.Initial,
           timestamp: Date.now(),
+          type: 'streaming',
+          status: 'pending'
         });
       } else {
            // Daily record greeting
@@ -113,6 +115,8 @@ class ChatStore {
              role: 'assistant',
              content: Prompts.Daily.Initial,
              timestamp: Date.now(),
+             type: 'streaming',
+             status: 'pending'
            });
       }
       this.saveCurrentSession();
@@ -132,77 +136,125 @@ class ChatStore {
       role: 'user',
       content,
       timestamp: Date.now(),
+      type: 'text'
     });
 
-    // 2. Prepare Context
-    const contextMessages = this.messages.map(m => ({ role: m.role, content: m.content }));
-    
-    // 3. Start Streaming AI Response
-    this.isStreaming = true;
+    // 3. Prepare AI Message Placeholder
     const aiMsgId = (Date.now() + 1).toString();
-    
     const aiMessage: Message = {
       id: aiMsgId,
       role: 'assistant',
-      content: '', // Start empty
+      content: '', 
       timestamp: Date.now(),
-      isStreaming: true
+      type: 'streaming',
+      status: 'pending'
     };
-    this.addMessage(aiMessage); // This calls saveCurrentSession, which saves empty AI msg
-
-    let systemPrompt = "";
-    if (this.sessionType === 'happy') {
-        systemPrompt = Prompts.Happy.System;
-    } else {
-        // Daily Record Prompt
-        systemPrompt = Prompts.Daily.System;
-    }
     
-    console.log(`[ChatStore] sendMessage - Type: ${this.sessionType}, Prompt: ${systemPrompt}`);
+    // 4. Cancel previous streams and add new message
+    this.cancelAllStreams();
+    this.addMessage(aiMessage); 
+  }
 
-    const fullMessages = [
-        { role: 'system', content: systemPrompt },
-        ...contextMessages
-    ];
+  cancelAllStreams() {
+      // Abort current request
+      if (this.abortController) {
+          this.abortController();
+          this.abortController = null;
+      }
+      this.isStreaming = false;
 
-    if (!userStore.apiKey) {
-        this.updateMessage(aiMsgId, "Error: API Key missing.");
-        this.isStreaming = false;
-        return;
-    }
+      // Update statuses
+      runInAction(() => {
+          this.messages.forEach(msg => {
+              if (msg.type === 'streaming' && (msg.status === 'loading' || msg.status === 'pending')) {
+                  msg.status = 'interrupted';
+              }
+          });
+      });
+  }
 
-    this.abortController = LLMService.streamCompletion(
-      fullMessages,
-      userStore.apiKey,
-      (delta) => {
-        runInAction(() => {
-            const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-            if (msgIndex !== -1) {
-                this.messages[msgIndex].content += delta;
-                // Optimization: don't save on every char, maybe save on finish
-            }
-        });
-      },
-      () => {
-        runInAction(() => {
-            this.isStreaming = false;
-            const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-            if(msgIndex !== -1) {
-                this.messages[msgIndex].isStreaming = false;
-            }
-            this.saveCurrentSession(); // Save full AI message
-        });
-      },
-      (err) => {
-        runInAction(() => {
-            this.isStreaming = false;
-             this.updateMessage(aiMsgId, "\n[Error: " + err.message + "]");
+  startStreaming(messageId: string) {
+      const msgIndex = this.messages.findIndex(m => m.id === messageId);
+      if (msgIndex === -1) return;
+      
+      const msg = this.messages[msgIndex];
+      if (msg.type !== 'streaming') return;
+      if (msg.status !== 'pending' && msg.status !== 'failed') return;
+
+      runInAction(() => {
+          msg.status = 'loading';
+          this.isStreaming = true; // Global flag maybe still useful for UI indicators
+      });
+
+      // Prepare Context (excluding this message and newer ones, although mostly this is latest)
+      // Actually strictly speaking we should send messages up to this point.
+      const previousMessages = this.messages.slice(0, msgIndex).map(m => ({ role: m.role, content: m.content }));
+
+      let systemPrompt = "";
+      if (this.sessionType === 'happy') {
+          systemPrompt = Prompts.Happy.System;
+      } else {
+          systemPrompt = Prompts.Daily.System;
+      }
+
+      console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
+
+      const fullMessages = [
+          { role: 'system', content: systemPrompt },
+          ...previousMessages
+      ];
+
+      if (!userStore.apiKey) {
+          runInAction(() => {
+             msg.status = 'failed';
+             msg.content = "Error: API Key missing.";
              this.saveCurrentSession();
-        });
-      },
-      'deepseek-chat',
-      userStore.baseUrl
-    );
+          });
+          return;
+      }
+
+      this.abortController = LLMService.streamCompletion(
+        fullMessages,
+        userStore.apiKey,
+        (delta) => {
+          runInAction(() => {
+              const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
+              if (currentMsgIndex !== -1) {
+                  this.messages[currentMsgIndex].content += delta;
+              }
+          });
+        },
+        () => {
+          runInAction(() => {
+              this.isStreaming = false;
+              const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
+              if(currentMsgIndex !== -1) {
+                  const currentMsg = this.messages[currentMsgIndex];
+                  if (currentMsg.type === 'streaming') {
+                      currentMsg.status = 'completed';
+                  }
+              }
+              this.saveCurrentSession(); 
+          });
+        },
+        (err) => {
+          runInAction(() => {
+              this.isStreaming = false;
+               const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
+              if(currentMsgIndex !== -1) {
+                  const currentMsg = this.messages[currentMsgIndex];
+                  if (currentMsg.type === 'streaming') {
+                      currentMsg.status = 'failed';
+                      // Append error to content or replace? Appending seems safer for now
+                      currentMsg.content += `\n[Error: ${err.message}]`;
+                  }
+              }
+               this.saveCurrentSession();
+          });
+        },
+        'deepseek-chat',
+        userStore.baseUrl
+      );
   }
 
   updateMessage(id: string, content: string) {
@@ -220,9 +272,60 @@ class ChatStore {
         role: 'assistant',
         content: '',
         timestamp: Date.now(),
-        isStreaming: true
+        type: 'streaming',
+        status: 'pending'
       };
+      this.cancelAllStreams();
       this.addMessage(aiMessage);
+
+      // We need to special case summary generation because it uses a different prompt strategy
+      // For now, let's just use the startStreaming structure but we might need a flag or separate method
+      // if the prompt logic is vastly different.
+      // The current startStreaming uses standard prompts. Summary uses specific prompt.
+      // To keep it clean, we might need to handle 'summary' specific logic in startStreaming or kept here.
+      
+      // WAIT. If we use a pull model, the component will call startStreaming.
+      // But startStreaming uses the SessionType to decide prompt.
+      // Summary is a special action.
+      // Maybe we can create a special message type or just handle it here directly?
+      
+      // User requirement: "Streaming request should be in the streaming component... only call LLMService if not received".
+      // This implies unify logic.
+      
+      // For summary, it is triggered by user button, not automatic flow.
+      // Let's manually trigger it here but using the same status update logic for consistency?
+      
+      // Actually, if we add the message with 'pending', the renderer will try to call 'startStreaming'.
+      // But 'startStreaming' logic (above) uses the standard system prompt.
+      // Summary needs a DIFFERENT system prompt.
+      
+      // Solution: Add a 'mode' or 'promptType' to StreamingMessage?
+      // Or just keep summary logic separate but use the same status fields?
+      // The user said: "request should be in the streaming component".
+      // If we keep summary logic here, it violates "request in component".
+      // But summary message is just an assistant message.
+      
+      // Let's stick to the decoupled plan:
+      // The summary generation IS a form of streaming.
+      // If we want to strictly follow "request in component", we need the component to know HOW to request.
+      // Since `startStreaming` is central, we can pass extra params or infer from context?
+      // Or we can just execute it here for Summary (since it's a specific action) but use the statuses.
+      // The main goal is "prevent interruption issue".
+      
+      // Let's implement the logic here for Summary to use the same Status flow for now,
+      // but we won't rely on the component to TRIGGER it (since it's not a standard chat flow).
+      // Wait, if we add it as 'pending', the component WILL trigger startStreaming.
+      // We should probably mark it as 'loading' immediately here so component doesn't trigger startStreaming?
+      // OR update startStreaming to handle Summary?
+      
+      // Let's mark it as 'loading' and execute here. Use the same status updates.
+      
+      runInAction(() => {
+         // this.messages.push(aiMessage) - done via addMessage
+         // Update to loading immediately to prevent component from triggering standard logic
+         const msg = this.messages.find(m => m.id === aiMsgId);
+         if(msg && msg.type === 'streaming') msg.status = 'loading';
+      });
 
       // Gather content
       const records = this.messages
@@ -236,12 +339,9 @@ class ChatStore {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `用户会话记录：${records}` }
       ];
-      console.log("[ChatStore] Generating Summary. Records:", records);
-      console.log("[ChatStore] Summary System Prompt:", systemPrompt);
-
+      
       this.abortController = LLMService.streamCompletion(
-        promptMessages, // Note: Not sending full history usually for specific summary, but here we summarize *records*
-        // Requirement says "Summarize this session records".
+        promptMessages,
         userStore.apiKey,
         (delta) => {
              runInAction(() => {
@@ -255,7 +355,12 @@ class ChatStore {
              runInAction(() => {
                 this.isStreaming = false;
                 const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-                if(msgIndex !== -1) this.messages[msgIndex].isStreaming = false;
+                if(msgIndex !== -1) {
+                    const msg = this.messages[msgIndex];
+                     if (msg.type === 'streaming') {
+                        msg.status = 'completed';
+                    }
+                }
                 this.saveCurrentSession();
                 
                 // Update Badge/Title
@@ -269,7 +374,15 @@ class ChatStore {
         (err) => {
              runInAction(() => {
                 this.isStreaming = false;
-                this.updateMessage(aiMsgId, "\n[Summary Error: " + err.message + "]");
+                const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
+                if(msgIndex !== -1) {
+                    const msg = this.messages[msgIndex];
+                     if (msg.type === 'streaming') {
+                        msg.status = 'failed';
+                        msg.content += `\n[Summary Error: ${err.message}]`;
+                    }
+                }
+                this.saveCurrentSession();
              });
         },
         'deepseek-chat',

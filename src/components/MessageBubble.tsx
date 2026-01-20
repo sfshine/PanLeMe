@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Icon } from '@rneui/themed';
 import { Message } from '../types/ChatTypes';
-import TypewriterText from './TypewriterText';
-
-const displayedMessageIds = new Set<string>();
+import { MessageContent } from './messages/MessageRegistry';
+import './messages/TextMessageRenderer';
+import './messages/StreamingMessageRenderer';
 
 interface MessageBubbleProps {
     message: Message;
@@ -13,13 +13,6 @@ interface MessageBubbleProps {
 
 const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
     const isUser = message.role === 'user';
-    const needsTypewriter = !isUser && !displayedMessageIds.has(message.id);
-
-    useEffect(() => {
-        if (!isUser) {
-            displayedMessageIds.add(message.id);
-        }
-    }, [message.id, isUser]);
 
     return (
         <View style={[
@@ -43,18 +36,7 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
                 <Text style={[styles.roleLabel, { color: theme.colors.black }]}>
                     {isUser ? '你' : '三星'}
                 </Text>
-                {isUser ? (
-                    <Text style={[styles.messageText, { color: theme.colors.black }]}>
-                        {message.content}
-                    </Text>
-                ) : (
-                    <TypewriterText
-                        content={message.content}
-                        isStreaming={message.isStreaming}
-                        theme={theme}
-                        speed={needsTypewriter ? 30 : 0}
-                    />
-                )}
+                <MessageContent message={message} theme={theme} />
             </View>
         </View>
     );
