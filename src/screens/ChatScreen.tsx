@@ -155,9 +155,6 @@ export const ChatScreen = observer(({ navigation }: any) => {
                 <Icon name="arrow-up" type="feather" color="#fff" size={18} />
               </TouchableOpacity>
             </View>
-            <Text style={[styles.disclaimer, { color: theme.colors.grey2 }]}>
-              三省可能会出错，请核实重要信息。
-            </Text>
           </View>
         </>
       )}
@@ -236,7 +233,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 34,
+    paddingBottom: 15,
   },
   inputContainer: {
     flexDirection: 'row',
