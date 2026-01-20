@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity } from 'react-native';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chatStore } from '../store/ChatStore';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import MessageBubble from '../components/MessageBubble';
@@ -9,6 +10,7 @@ import GuidePage from '../components/GuidePage';
 
 export const ChatScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
@@ -52,7 +54,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
       {/* ChatGPT Style Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5 }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5, paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -145,7 +147,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 10,
     borderBottomWidth: 0.5,

@@ -2,12 +2,14 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Text, Icon, useTheme } from '@rneui/themed';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { chatStore } from '../store/ChatStore';
 import { userStore } from '../store/UserStore';
 
 export const CustomDrawerContent = observer((props: any) => {
     const { theme } = useTheme();
+    const insets = useSafeAreaInsets();
 
     const handleNewSession = () => {
         chatStore.startNewSession();
@@ -29,7 +31,7 @@ export const CustomDrawerContent = observer((props: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.grey3 }]}>
             {/* New Chat Button */}
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
                 <TouchableOpacity
                     style={[styles.newChatButton, { borderColor: theme.colors.grey5 }]}
                     onPress={handleNewSession}
@@ -90,7 +92,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingTop: 60,
         paddingHorizontal: 12,
         paddingBottom: 16,
     },
