@@ -19,14 +19,29 @@ export const ChatScreen = observer(({ navigation }: any) => {
     if (!chatStore.currentSessionId) {
       chatStore.startNewSession('unselected');
     }
+  }, []);
 
+  // Reset summary prompt when switching sessions
+  useEffect(() => {
+    setShowSummaryPrompt(false);
+  }, [chatStore.currentSessionId]);
+
+  useEffect(() => {
     const checkSummary = () => {
+      // Only show if it's currently false (don't auto-hide strictly if user ignored it, but for now strict sync is safer for bugs)
+      // "If chatStore.needsSummary is true, we show it."
+      // But if user manually dismissed it (set to false), we don't want it to pop back up immediately on next render loop if nothing changed.
+      // But dependency is messages.length.
+      // Let's just set it to true if needed.
       if (chatStore.needsSummary) {
         setShowSummaryPrompt(true);
+      } else {
+        // Safe to hide if conditions no longer met (e.g. time passed, or summary generated)
+        setShowSummaryPrompt(false);
       }
     };
     checkSummary();
-  }, [chatStore.messages.length]);
+  }, [chatStore.messages.length, chatStore.sessionType]);
 
   useEffect(() => {
     if (chatStore.apiErrorStatus) {
@@ -82,14 +97,29 @@ export const ChatScreen = observer(({ navigation }: any) => {
     return bot ? bot.title : '盘了么';
   };
 
+  const headerHeight = (insets.top || StatusBar.currentHeight || 0) + 48;
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
-      {/* ChatGPT Style Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5, paddingTop: (Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 0) : insets.top) + 8 }]}>
+      {/* ChatGPT Style Header - Floating */}
+      <View style={[
+        styles.header,
+        {
+          backgroundColor: theme.colors.background,
+          borderBottomColor: theme.colors.grey5,
+          paddingTop: (Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 0) : insets.top) + 2,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          height: headerHeight
+        }
+      ]}>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -105,26 +135,37 @@ export const ChatScreen = observer(({ navigation }: any) => {
             <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
           </TouchableOpacity>
         )}
-        <View style={styles.headerRight}>
-          {Bots.find(b => b.id === chatStore.sessionType)?.summary && (
-            <TouchableOpacity
-              style={styles.headerRightButton}
-              onPress={() => {
-                Alert.alert(
-                  '确认生成复盘？',
-                  '将根据今日记录生成一份总结。',
-                  [
-                    { text: '取消', style: 'cancel' },
-                    { text: '生成', onPress: () => chatStore.generateSummary() }
-                  ]
-                );
-              }}
-            >
-              <Icon name="sparkles" type="ionicon" color={theme.colors.primary} size={20} />
-            </TouchableOpacity>
-          )}
+        <View style={{ flexDirection: 'row' }}>
+          {/* Manual Summary Trigger */}
+          {(() => {
+            const bot = Bots.find(b => b.id === chatStore.sessionType);
+            if (bot?.summary) {
+              return (
+                <TouchableOpacity
+                  style={styles.newChatButton}
+                  onPress={() => {
+                    Alert.alert(
+                      "生成复盘",
+                      "确定要根据当前对话生成今日复盘吗？",
+                      [
+                        { text: "取消", style: "cancel" },
+                        {
+                          text: "生成",
+                          onPress: () => chatStore.generateSummary()
+                        }
+                      ]
+                    );
+                  }}
+                >
+                  <Icon name="sparkles" type="ionicon" color={theme.colors.primary} size={20} />
+                </TouchableOpacity>
+              );
+            }
+            return null;
+          })()}
+
           <TouchableOpacity
-            style={styles.headerRightButton}
+            style={styles.newChatButton}
             onPress={() => {
               if (chatStore.sessionType === 'unselected') {
                 if (Platform.OS === 'android') {
@@ -143,7 +184,13 @@ export const ChatScreen = observer(({ navigation }: any) => {
       </View>
 
       {showSummaryPrompt && (
-        <View style={[styles.summaryPrompt, { backgroundColor: theme.colors.grey0 }]}>
+        <View style={[
+          styles.summaryPrompt,
+          {
+            backgroundColor: theme.colors.grey0,
+            marginTop: headerHeight + 8 // Push down below floating header
+          }
+        ]}>
           <Text style={[styles.summaryText, { color: theme.colors.black }]}>
             🌙 晚安，需要为你生成今日复盘吗？
           </Text>
@@ -163,7 +210,9 @@ export const ChatScreen = observer(({ navigation }: any) => {
       )}
 
       {chatStore.sessionType === 'unselected' ? (
-        <GuidePage onSelect={(type) => chatStore.initializeSession(type)} />
+        <View style={{ flex: 1, paddingTop: headerHeight }}>
+          <GuidePage onSelect={(type) => chatStore.initializeSession(type)} />
+        </View>
       ) : (
         <>
           <FlatList
@@ -172,7 +221,15 @@ export const ChatScreen = observer(({ navigation }: any) => {
             extraData={chatStore.messages.length}
             keyExtractor={item => item.id}
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[
+              styles.listContent,
+              // If summary prompt is NOT shown, we need padding for header.
+              // If summary prompt IS shown, the list layout starts below it (due to marginTop on prompt),
+              // so we don't need header padding on list itself?
+              // Actually, if prompt is shown, list is flex 1 below it.
+              // If prompt is hidden, list is flex 1 at top.
+              !showSummaryPrompt && { paddingTop: headerHeight }
+            ]}
             inverted
             style={{ flex: 1 }}
           />
@@ -268,11 +325,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerRightButton: {
+  newChatButton: {
     padding: 8,
   },
   listContent: {

@@ -317,8 +317,7 @@ class ChatStore {
     }
 
     async generateSummary() {
-        const bot = Bots.find(b => b.id === this.sessionType);
-        if (!bot?.summary || !userStore.apiKey) return;
+        if (this.sessionType !== 'daily' || !userStore.apiKey) return;
 
         this.isStreaming = true;
         const aiMsgId = (Date.now() + 1).toString();
@@ -388,7 +387,23 @@ class ChatStore {
             .map(m => `${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}: ${m.content}`)
             .join('\n');
 
-        const systemPrompt = bot.summary;
+        const bot = Bots.find(b => b.id === this.sessionType);
+        const summaryConfig = bot?.summary;
+
+        if (!summaryConfig) {
+            runInAction(() => {
+                this.isStreaming = false;
+                const msg = this.messages.find(m => m.id === aiMsgId);
+                if (msg && msg.type === 'streaming') {
+                    msg.status = 'failed';
+                    msg.content = "Error: Summary configuration not found for this bot.";
+                }
+                this.saveCurrentSession();
+            });
+            return;
+        }
+
+        const systemPrompt = summaryConfig.systemPrompt;
 
         const promptMessages = [
             { role: 'system', content: systemPrompt },
@@ -454,15 +469,40 @@ class ChatStore {
     }
 
     get needsSummary() {
+        if (this.messages.length === 0) return false;
         const bot = Bots.find(b => b.id === this.sessionType);
-        if (!bot?.showSummaryPrompt || this.messages.length === 0) return false;
-        const hour = new Date().getHours();
-        // 22:00 - 23:30 (Requirement)
-        // Check if already summarized (last message is assistant?)
+        const summaryConfig = bot?.summary;
+
+        if (!summaryConfig) return false;
+
+        const { promptStartTime = 20, promptDuration = 5 } = summaryConfig;
+
+        // Calculate end hour (e.g., 20 + 5 = 25 -> 1 AM next day)
+        // If current hour is within [start, start + duration)
+        // Handle wrapping around midnight
+        const endHour = promptStartTime + promptDuration;
+        const currentHour = new Date().getHours();
+
+        let isInTimeWindow = false;
+        if (endHour <= 24) {
+            isInTimeWindow = currentHour >= promptStartTime && currentHour < endHour;
+        } else {
+            // Wraps around midnight (e.g. 22 to 03) -> 22..24 OR 0..3
+            const overflow = endHour - 24;
+            isInTimeWindow = (currentHour >= promptStartTime) || (currentHour < overflow);
+        }
+
+        if (!isInTimeWindow) return false;
+
+        // Check if already summarized (last message is assistant and contains specific content/flag)
+        // Better: check if an assistant message exists AFTER the start time of the window today?
+        // Simple check as per original logic: last message is assistant?
+        // But user might chat more. 
+        // Let's stick to "hasSummary" logic but maybe robustify it later.
+
         const lastMsg = this.messages[this.messages.length - 1];
         const hasSummary = lastMsg.role === 'assistant' && lastMsg.content.includes("复盘");
-
-        return (hour >= 20 || (hour === 23 && new Date().getMinutes() <= 30)) && !hasSummary;
+        return !hasSummary;
     }
 }
 
