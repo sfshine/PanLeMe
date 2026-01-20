@@ -7,293 +7,293 @@ import { Message, SessionType, Session } from '../types/ChatTypes';
 import { Bots } from '../config/Bots';
 
 class ChatStore {
-  messages: Message[] = [];
-  isStreaming: boolean = false;
-  sessionType: SessionType = 'happy';
-  currentSessionId: string | null = null;
-  abortController: (() => void) | null = null;
-  apiErrorStatus: number | null = null;
+    messages: Message[] = [];
+    isStreaming: boolean = false;
+    sessionType: SessionType = 'happy';
+    currentSessionId: string | null = null;
+    abortController: (() => void) | null = null;
+    apiErrorStatus: number | null = null;
 
-  sessions: Session[] = [];
-  
-  // Optimization: Stream buffers and listeners to avoid frequent MobX updates
-  private streamBuffers: Map<string, string> = new Map();
-  private streamListeners: Map<string, (content: string) => void> = new Map();
+    sessions: Session[] = [];
 
-  constructor() {
-    makeAutoObservable(this);
-    this.loadSessions();
-  }
+    // Optimization: Stream buffers and listeners to avoid frequent MobX updates
+    private streamBuffers: Map<string, string> = new Map();
+    private streamListeners: Map<string, (content: string) => void> = new Map();
 
-  loadSessions() {
-    const storedWrapper = StorageService.getString(StorageKeys.CHAT_SESSIONS);
-    if (storedWrapper) {
-      try {
-        this.sessions = JSON.parse(storedWrapper);
-      } catch (e) {
-        console.error("Failed to parse sessions", e);
-      }
+    constructor() {
+        makeAutoObservable(this);
+        this.loadSessions();
     }
-  }
 
-  saveSessions() {
-    StorageService.setString(StorageKeys.CHAT_SESSIONS, JSON.stringify(this.sessions));
-  }
-
-  saveCurrentSession() {
-      if (!this.currentSessionId || this.sessionType === 'unselected') return;
-      
-      // Optimization: Don't save if it's a new session and user hasn't sent anything yet
-      const existing = this.sessions.find(s => s.id === this.currentSessionId);
-      const hasUserMessage = this.messages.some(m => m.role === 'user');
-      
-      if (!existing && !hasUserMessage) {
-          return;
-      }
-      
-      const key = `session_${this.currentSessionId}`;
-      StorageService.setString(key, JSON.stringify(this.messages));
-      
-      // Update session list if new or title changed (MVP: Title = Date)
-      if (!existing) {
-          const bot = Bots.find(b => b.id === this.sessionType);
-          const title = bot 
-            ? `${bot.title}-${new Date().toLocaleDateString()}` 
-            : `新会话-${new Date().toLocaleDateString()}`;
-            
-          this.sessions.unshift({
-              id: this.currentSessionId,
-              title,
-              type: this.sessionType,
-              timestamp: Date.now()
-          });
-          this.saveSessions();
-      }
-  }
-
-  loadSession(id: string) {
-     const key = `session_${id}`;
-     const stored = StorageService.getString(key);
-     if (stored) {
-         try {
-             this.messages = JSON.parse(stored);
-             this.currentSessionId = id;
-             const session = this.sessions.find(s => s.id === id);
-             if (session) this.sessionType = session.type;
-         } catch (e) { console.error(e) }
-     }
-  }
-
-  deleteSession(id: string) {
-      this.sessions = this.sessions.filter(s => s.id !== id);
-      this.saveSessions();
-      StorageService.removeItem(`session_${id}`);
-      if (this.currentSessionId === id) {
-          this.startNewSession('unselected'); // Reset to default
-      }
-  }
-
-  startNewSession(type: SessionType = 'unselected') {
-    // Only save if it was a valid session
-    if (this.sessionType !== 'unselected') {
-        this.saveCurrentSession(); 
+    loadSessions() {
+        const storedWrapper = StorageService.getString(StorageKeys.CHAT_SESSIONS);
+        if (storedWrapper) {
+            try {
+                this.sessions = JSON.parse(storedWrapper);
+            } catch (e) {
+                console.error("Failed to parse sessions", e);
+            }
+        }
     }
-    
-    this.messages = [];
-    this.sessionType = type;
-    this.currentSessionId = Date.now().toString();
-    this.isStreaming = false;
-    
-    if (type !== 'unselected') {
-        this.initializeSession(type);
-    }
-  }
 
-  initializeSession(type: SessionType) {
-      this.sessionType = type;
-      
-      const bot = Bots.find(b => b.id === type);
-      if (bot) {
-         this.addMessage({
+    saveSessions() {
+        StorageService.setString(StorageKeys.CHAT_SESSIONS, JSON.stringify(this.sessions));
+    }
+
+    saveCurrentSession() {
+        if (!this.currentSessionId || this.sessionType === 'unselected') return;
+
+        // Optimization: Don't save if it's a new session and user hasn't sent anything yet
+        const existing = this.sessions.find(s => s.id === this.currentSessionId);
+        const hasUserMessage = this.messages.some(m => m.role === 'user');
+
+        if (!existing && !hasUserMessage) {
+            return;
+        }
+
+        const key = `session_${this.currentSessionId}`;
+        StorageService.setString(key, JSON.stringify(this.messages));
+
+        // Update session list if new or title changed (MVP: Title = Date)
+        if (!existing) {
+            const bot = Bots.find(b => b.id === this.sessionType);
+            const title = bot
+                ? `${bot.title}-${new Date().toLocaleDateString()}`
+                : `新会话-${new Date().toLocaleDateString()}`;
+
+            this.sessions.unshift({
+                id: this.currentSessionId,
+                title,
+                type: this.sessionType,
+                timestamp: Date.now()
+            });
+            this.saveSessions();
+        }
+    }
+
+    loadSession(id: string) {
+        const key = `session_${id}`;
+        const stored = StorageService.getString(key);
+        if (stored) {
+            try {
+                this.messages = JSON.parse(stored);
+                this.currentSessionId = id;
+                const session = this.sessions.find(s => s.id === id);
+                if (session) this.sessionType = session.type;
+            } catch (e) { console.error(e) }
+        }
+    }
+
+    deleteSession(id: string) {
+        this.sessions = this.sessions.filter(s => s.id !== id);
+        this.saveSessions();
+        StorageService.removeItem(`session_${id}`);
+        if (this.currentSessionId === id) {
+            this.startNewSession('unselected'); // Reset to default
+        }
+    }
+
+    startNewSession(type: SessionType = 'unselected') {
+        // Only save if it was a valid session
+        if (this.sessionType !== 'unselected') {
+            this.saveCurrentSession();
+        }
+
+        this.messages = [];
+        this.sessionType = type;
+        this.currentSessionId = Date.now().toString();
+        this.isStreaming = false;
+
+        if (type !== 'unselected') {
+            this.initializeSession(type);
+        }
+    }
+
+    initializeSession(type: SessionType) {
+        this.sessionType = type;
+
+        const bot = Bots.find(b => b.id === type);
+        if (bot) {
+            this.addMessage({
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: bot.initialMessage,
+                timestamp: Date.now(),
+                type: 'text',
+                shouldAnimate: true
+            });
+        }
+        this.saveCurrentSession();
+    }
+
+    addMessage(msg: Message) {
+        this.messages.push(msg);
+        this.saveCurrentSession(); // Auto-save on new message
+    }
+
+    async sendMessage(content: string) {
+        if (!content.trim()) return;
+
+        // 1. Add User Message
+        this.addMessage({
             id: Date.now().toString(),
-            role: 'assistant',
-            content: bot.initialMessage,
+            role: 'user',
+            content,
             timestamp: Date.now(),
-            type: 'text',
-            shouldAnimate: true
-         });
-      }
-      this.saveCurrentSession();
-  }
+            type: 'text'
+        });
 
-  addMessage(msg: Message) {
-    this.messages.push(msg);
-    this.saveCurrentSession(); // Auto-save on new message
-  }
+        // 3. Prepare AI Message Placeholder
+        const aiMsgId = (Date.now() + 1).toString();
+        const aiMessage: Message = {
+            id: aiMsgId,
+            role: 'assistant',
+            content: '', // Start empty, will be filled on completion
+            timestamp: Date.now(),
+            type: 'streaming',
+            status: 'pending'
+        };
 
-  async sendMessage(content: string) {
-    if (!content.trim()) return;
+        // 4. Cancel previous streams and add new message
+        this.cancelAllStreams();
+        this.addMessage(aiMessage);
+    }
 
-    // 1. Add User Message
-    this.addMessage({
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-      timestamp: Date.now(),
-      type: 'text'
-    });
+    subscribeToStream(id: string, callback: (content: string) => void): () => void {
+        this.streamListeners.set(id, callback);
 
-    // 3. Prepare AI Message Placeholder
-    const aiMsgId = (Date.now() + 1).toString();
-    const aiMessage: Message = {
-      id: aiMsgId,
-      role: 'assistant',
-      content: '', // Start empty, will be filled on completion
-      timestamp: Date.now(),
-      type: 'streaming',
-      status: 'pending'
-    };
-    
-    // 4. Cancel previous streams and add new message
-    this.cancelAllStreams();
-    this.addMessage(aiMessage); 
-  }
+        // If there's already buffered content, send it immediately
+        if (this.streamBuffers.has(id)) {
+            callback(this.streamBuffers.get(id) || '');
+        }
 
-  subscribeToStream(id: string, callback: (content: string) => void): () => void {
-      this.streamListeners.set(id, callback);
-      
-      // If there's already buffered content, send it immediately
-      if (this.streamBuffers.has(id)) {
-          callback(this.streamBuffers.get(id) || '');
-      }
-      
-      return () => {
-          this.streamListeners.delete(id);
-      };
-  }
+        return () => {
+            this.streamListeners.delete(id);
+        };
+    }
 
-  private notifyListeners(id: string, content: string) {
-      const listener = this.streamListeners.get(id);
-      if (listener) {
-          listener(content);
-      }
-  }
+    private notifyListeners(id: string, content: string) {
+        const listener = this.streamListeners.get(id);
+        if (listener) {
+            listener(content);
+        }
+    }
 
-  cancelAllStreams() {
-      // Abort current request
-      if (this.abortController) {
-          this.abortController();
-          this.abortController = null;
-      }
-      this.isStreaming = false;
-      this.streamBuffers.clear();
-      // We don't clear listeners here, they will unsubscribe themselves or getting interrupted status update
+    cancelAllStreams() {
+        // Abort current request
+        if (this.abortController) {
+            this.abortController();
+            this.abortController = null;
+        }
+        this.isStreaming = false;
+        this.streamBuffers.clear();
+        // We don't clear listeners here, they will unsubscribe themselves or getting interrupted status update
 
-      // Update statuses
-      runInAction(() => {
-          this.messages.forEach(msg => {
-              if (msg.type === 'streaming' && (msg.status === 'loading' || msg.status === 'pending')) {
-                  msg.status = 'interrupted';
-              }
-          });
-      });
-  }
+        // Update statuses
+        runInAction(() => {
+            this.messages.forEach(msg => {
+                if (msg.type === 'streaming' && (msg.status === 'loading' || msg.status === 'pending')) {
+                    msg.status = 'interrupted';
+                }
+            });
+        });
+    }
 
-  startStreaming(messageId: string) {
-      const msgIndex = this.messages.findIndex(m => m.id === messageId);
-      if (msgIndex === -1) return;
-      
-      const msg = this.messages[msgIndex];
-      if (msg.type !== 'streaming') return;
-      if (msg.status !== 'pending' && msg.status !== 'failed') return;
+    startStreaming(messageId: string) {
+        const msgIndex = this.messages.findIndex(m => m.id === messageId);
+        if (msgIndex === -1) return;
 
-      runInAction(() => {
-          msg.status = 'loading';
-          this.isStreaming = true; // Global flag maybe still useful for UI indicators
-      });
-      
-      // Initialize buffer
-      this.streamBuffers.set(messageId, '');
-      this.notifyListeners(messageId, '');
+        const msg = this.messages[msgIndex];
+        if (msg.type !== 'streaming') return;
+        if (msg.status !== 'pending' && msg.status !== 'failed') return;
 
-      // Prepare Context (excluding this message and newer ones, although mostly this is latest)
-      // Actually strictly speaking we should send messages up to this point.
-      const previousMessages = this.messages.slice(0, msgIndex).map(m => ({ role: m.role, content: m.content }));
+        runInAction(() => {
+            msg.status = 'loading';
+            this.isStreaming = true; // Global flag maybe still useful for UI indicators
+        });
 
-      let systemPrompt = "";
-      const bot = Bots.find(b => b.id === this.sessionType);
-      if (bot) {
-          systemPrompt = bot.systemPrompt;
-      }
-      
-      // Fallback or legacy handling if needed, but optimally we expect a valid bot
+        // Initialize buffer
+        this.streamBuffers.set(messageId, '');
+        this.notifyListeners(messageId, '');
+
+        // Prepare Context (excluding this message and newer ones, although mostly this is latest)
+        // Actually strictly speaking we should send messages up to this point.
+        const previousMessages = this.messages.slice(0, msgIndex).map(m => ({ role: m.role, content: m.content }));
+
+        let systemPrompt = "";
+        const bot = Bots.find(b => b.id === this.sessionType);
+        if (bot) {
+            systemPrompt = bot.systemPrompt;
+        }
+
+        // Fallback or legacy handling if needed, but optimally we expect a valid bot
 
 
-      console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
+        console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
 
-      const fullMessages = [
-          { role: 'system', content: systemPrompt },
-          ...previousMessages
-      ];
+        const fullMessages = [
+            { role: 'system', content: systemPrompt },
+            ...previousMessages
+        ];
 
-      if (!userStore.apiKey) {
-          runInAction(() => {
-             msg.status = 'failed';
-             msg.content = "Error: API Key missing.";
-             this.saveCurrentSession();
-             this.streamBuffers.delete(messageId);
-          });
-          return;
-      }
+        if (!userStore.apiKey) {
+            runInAction(() => {
+                msg.status = 'failed';
+                msg.content = "Error: API Key missing.";
+                this.saveCurrentSession();
+                this.streamBuffers.delete(messageId);
+            });
+            return;
+        }
 
-      this.abortController = LLMService.streamCompletion(
-        fullMessages,
-        userStore.apiKey,
-        (delta) => {
-          // Update buffer and notify listener directly
-          // NO MobX action needed for this part
-          const currentBuffer = (this.streamBuffers.get(messageId) || '') + delta;
-          this.streamBuffers.set(messageId, currentBuffer);
-          this.notifyListeners(messageId, currentBuffer);
-        },
-        () => {
-          runInAction(() => {
-              this.isStreaming = false;
-              const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
-              if(currentMsgIndex !== -1) {
-                  const currentMsg = this.messages[currentMsgIndex];
-                  if (currentMsg.type === 'streaming') {
-                      currentMsg.status = 'completed';
-                      // Final commit to MobX state
-                      currentMsg.content = this.streamBuffers.get(messageId) || currentMsg.content;
-                  }
-              }
-              this.streamBuffers.delete(messageId);
-              this.saveCurrentSession(); 
-          });
-        },
-        (err) => {
-          runInAction(() => {
-              this.isStreaming = false;
-               const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
-              if(currentMsgIndex !== -1) {
-                  const currentMsg = this.messages[currentMsgIndex];
-                    if (currentMsg.type === 'streaming') {
-                        currentMsg.status = 'failed';
-                        const buffer = this.streamBuffers.get(messageId) || '';
-                        currentMsg.content = buffer + `\n[Error: ${err.message}]`;
-                        
-                        if (err.status === 401 || err.status === 402) {
-                            this.apiErrorStatus = err.status;
+        this.abortController = LLMService.streamCompletion(
+            fullMessages,
+            userStore.apiKey,
+            (delta) => {
+                // Update buffer and notify listener directly
+                // NO MobX action needed for this part
+                const currentBuffer = (this.streamBuffers.get(messageId) || '') + delta;
+                this.streamBuffers.set(messageId, currentBuffer);
+                this.notifyListeners(messageId, currentBuffer);
+            },
+            () => {
+                runInAction(() => {
+                    this.isStreaming = false;
+                    const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
+                    if (currentMsgIndex !== -1) {
+                        const currentMsg = this.messages[currentMsgIndex];
+                        if (currentMsg.type === 'streaming') {
+                            currentMsg.status = 'completed';
+                            // Final commit to MobX state
+                            currentMsg.content = this.streamBuffers.get(messageId) || currentMsg.content;
                         }
                     }
-                }
-                 this.streamBuffers.delete(messageId);
-                 this.saveCurrentSession();
-            });
-          },
-          'deepseek-chat',
-          userStore.baseUrl
+                    this.streamBuffers.delete(messageId);
+                    this.saveCurrentSession();
+                });
+            },
+            (err) => {
+                runInAction(() => {
+                    this.isStreaming = false;
+                    const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
+                    if (currentMsgIndex !== -1) {
+                        const currentMsg = this.messages[currentMsgIndex];
+                        if (currentMsg.type === 'streaming') {
+                            currentMsg.status = 'failed';
+                            const buffer = this.streamBuffers.get(messageId) || '';
+                            currentMsg.content = buffer + `\n[Error: ${err.message}]`;
+
+                            if (err.status === 401 || err.status === 402) {
+                                this.apiErrorStatus = err.status;
+                            }
+                        }
+                    }
+                    this.streamBuffers.delete(messageId);
+                    this.saveCurrentSession();
+                });
+            },
+            'deepseek-chat',
+            userStore.baseUrl
         );
     }
 
@@ -301,169 +301,169 @@ class ChatStore {
         this.apiErrorStatus = null;
     }
 
-  updateMessage(id: string, content: string) {
-    const msg = this.messages.find(m => m.id === id);
-    if (msg) msg.content = content;
-  }
-  
+    updateMessage(id: string, content: string) {
+        const msg = this.messages.find(m => m.id === id);
+        if (msg) msg.content = content;
+    }
 
-  
-  markMessageAnimationCompleted(id: string) {
-      const msg = this.messages.find(m => m.id === id);
-      if (msg) {
-          msg.shouldAnimate = false;
-          this.saveCurrentSession();
-      }
-  }
 
-  async generateSummary() {
-      const bot = Bots.find(b => b.id === this.sessionType);
-      if (!bot?.summary || !userStore.apiKey) return;
-      
-      this.isStreaming = true;
-      const aiMsgId = (Date.now() + 1).toString();
-      const aiMessage: Message = {
-        id: aiMsgId,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        type: 'streaming',
-        status: 'pending'
-      };
-      this.cancelAllStreams();
-      this.addMessage(aiMessage);
 
-      // We need to special case summary generation because it uses a different prompt strategy
-      // For now, let's just use the startStreaming structure but we might need a flag or separate method
-      // if the prompt logic is vastly different.
-      // The current startStreaming uses standard prompts. Summary uses specific prompt.
-      // To keep it clean, we might need to handle 'summary' specific logic in startStreaming or kept here.
-      
-      // WAIT. If we use a pull model, the component will call startStreaming.
-      // But startStreaming uses the SessionType to decide prompt.
-      // Summary is a special action.
-      // Maybe we can create a special message type or just handle it here directly?
-      
-      // User requirement: "Streaming request should be in the streaming component... only call LLMService if not received".
-      // This implies unify logic.
-      
-      // For summary, it is triggered by user button, not automatic flow.
-      // Let's manually trigger it here but using the same status update logic for consistency?
-      
-      // Actually, if we add the message with 'pending', the renderer will try to call 'startStreaming'.
-      // But 'startStreaming' logic (above) uses the standard system prompt.
-      // Summary needs a DIFFERENT system prompt.
-      
-      // Solution: Add a 'mode' or 'promptType' to StreamingMessage?
-      // Or just keep summary logic separate but use the same status fields?
-      // The user said: "request should be in the streaming component".
-      // If we keep summary logic here, it violates "request in component".
-      // But summary message is just an assistant message.
-      
-      // Let's stick to the decoupled plan:
-      // The summary generation IS a form of streaming.
-      // If we want to strictly follow "request in component", we need the component to know HOW to request.
-      // Since `startStreaming` is central, we can pass extra params or infer from context?
-      // Or we can just execute it here for Summary (since it's a specific action) but use the statuses.
-      // The main goal is "prevent interruption issue".
-      
-      // Let's implement the logic here for Summary to use the same Status flow for now,
-      // but we won't rely on the component to TRIGGER it (since it's not a standard chat flow).
-      // Wait, if we add it as 'pending', the component WILL trigger startStreaming.
-      // We should probably mark it as 'loading' immediately here so component doesn't trigger startStreaming?
-      // OR update startStreaming to handle Summary?
-      
-      // Let's mark it as 'loading' and execute here. Use the same status updates.
-      
-      runInAction(() => {
-         // this.messages.push(aiMessage) - done via addMessage
-         // Update to loading immediately to prevent component from triggering standard logic
-         const msg = this.messages.find(m => m.id === aiMsgId);
-         if(msg && msg.type === 'streaming') msg.status = 'loading';
-      });
+    markMessageAnimationCompleted(id: string) {
+        const msg = this.messages.find(m => m.id === id);
+        if (msg) {
+            msg.shouldAnimate = false;
+            this.saveCurrentSession();
+        }
+    }
 
-      // Gather content
-      const records = this.messages
-          .filter(m => m.role === 'user')
-          .map(m => `${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}: ${m.content}`)
-          .join('\n');
+    async generateSummary() {
+        const bot = Bots.find(b => b.id === this.sessionType);
+        if (!bot?.summary || !userStore.apiKey) return;
 
-      const systemPrompt = bot.summary;
+        this.isStreaming = true;
+        const aiMsgId = (Date.now() + 1).toString();
+        const aiMessage: Message = {
+            id: aiMsgId,
+            role: 'assistant',
+            content: '',
+            timestamp: Date.now(),
+            type: 'streaming',
+            status: 'pending'
+        };
+        this.cancelAllStreams();
+        this.addMessage(aiMessage);
 
-      const promptMessages = [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `用户会话记录：${records}` }
-      ];
-      
-      this.abortController = LLMService.streamCompletion(
-        promptMessages,
-        userStore.apiKey,
-        (delta) => {
-            // Buffer logic for summary too?
-            // Yes, let's use the same buffer mechanics for consistency, 
-            // although summary is often not as critical for list scroll.
-            const currentBuffer = (this.streamBuffers.get(aiMsgId) || '') + delta;
-            this.streamBuffers.set(aiMsgId, currentBuffer);
-            this.notifyListeners(aiMsgId, currentBuffer);
-        },
-        () => {
-             runInAction(() => {
-                this.isStreaming = false;
-                const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-                if(msgIndex !== -1) {
-                    const msg = this.messages[msgIndex];
-                     if (msg.type === 'streaming') {
-                        msg.status = 'completed';
-                        msg.content = this.streamBuffers.get(aiMsgId) || msg.content;
-                    }
-                }
-                this.streamBuffers.delete(aiMsgId);
-                this.saveCurrentSession();
-                
-                // Update Badge/Title
-                const session = this.sessions.find(s => s.id === this.currentSessionId);
-                if (session) {
-                    session.title = `今日复盘-${new Date().toLocaleDateString()}`;
-                    this.saveSessions();
-                }
-             });
-        },
-        (err) => {
-             runInAction(() => {
-                this.isStreaming = false;
-                const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
-                if(msgIndex !== -1) {
-                    const msg = this.messages[msgIndex];
-                     if (msg.type === 'streaming') {
-                        msg.status = 'failed';
-                        const buffer = this.streamBuffers.get(aiMsgId) || '';
-                        msg.content = buffer + `\n[Summary Error: ${err.message}]`;
+        // We need to special case summary generation because it uses a different prompt strategy
+        // For now, let's just use the startStreaming structure but we might need a flag or separate method
+        // if the prompt logic is vastly different.
+        // The current startStreaming uses standard prompts. Summary uses specific prompt.
+        // To keep it clean, we might need to handle 'summary' specific logic in startStreaming or kept here.
 
-                        if (err.status === 401 || err.status === 402) {
-                            this.apiErrorStatus = err.status;
+        // WAIT. If we use a pull model, the component will call startStreaming.
+        // But startStreaming uses the SessionType to decide prompt.
+        // Summary is a special action.
+        // Maybe we can create a special message type or just handle it here directly?
+
+        // User requirement: "Streaming request should be in the streaming component... only call LLMService if not received".
+        // This implies unify logic.
+
+        // For summary, it is triggered by user button, not automatic flow.
+        // Let's manually trigger it here but using the same status update logic for consistency?
+
+        // Actually, if we add the message with 'pending', the renderer will try to call 'startStreaming'.
+        // But 'startStreaming' logic (above) uses the standard system prompt.
+        // Summary needs a DIFFERENT system prompt.
+
+        // Solution: Add a 'mode' or 'promptType' to StreamingMessage?
+        // Or just keep summary logic separate but use the same status fields?
+        // The user said: "request should be in the streaming component".
+        // If we keep summary logic here, it violates "request in component".
+        // But summary message is just an assistant message.
+
+        // Let's stick to the decoupled plan:
+        // The summary generation IS a form of streaming.
+        // If we want to strictly follow "request in component", we need the component to know HOW to request.
+        // Since `startStreaming` is central, we can pass extra params or infer from context?
+        // Or we can just execute it here for Summary (since it's a specific action) but use the statuses.
+        // The main goal is "prevent interruption issue".
+
+        // Let's implement the logic here for Summary to use the same Status flow for now,
+        // but we won't rely on the component to TRIGGER it (since it's not a standard chat flow).
+        // Wait, if we add it as 'pending', the component WILL trigger startStreaming.
+        // We should probably mark it as 'loading' immediately here so component doesn't trigger startStreaming?
+        // OR update startStreaming to handle Summary?
+
+        // Let's mark it as 'loading' and execute here. Use the same status updates.
+
+        runInAction(() => {
+            // this.messages.push(aiMessage) - done via addMessage
+            // Update to loading immediately to prevent component from triggering standard logic
+            const msg = this.messages.find(m => m.id === aiMsgId);
+            if (msg && msg.type === 'streaming') msg.status = 'loading';
+        });
+
+        // Gather content
+        const records = this.messages
+            .filter(m => m.role === 'user')
+            .map(m => `${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}: ${m.content}`)
+            .join('\n');
+
+        const systemPrompt = bot.summary;
+
+        const promptMessages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `用户会话记录：${records}` }
+        ];
+
+        this.abortController = LLMService.streamCompletion(
+            promptMessages,
+            userStore.apiKey,
+            (delta) => {
+                // Buffer logic for summary too?
+                // Yes, let's use the same buffer mechanics for consistency, 
+                // although summary is often not as critical for list scroll.
+                const currentBuffer = (this.streamBuffers.get(aiMsgId) || '') + delta;
+                this.streamBuffers.set(aiMsgId, currentBuffer);
+                this.notifyListeners(aiMsgId, currentBuffer);
+            },
+            () => {
+                runInAction(() => {
+                    this.isStreaming = false;
+                    const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
+                    if (msgIndex !== -1) {
+                        const msg = this.messages[msgIndex];
+                        if (msg.type === 'streaming') {
+                            msg.status = 'completed';
+                            msg.content = this.streamBuffers.get(aiMsgId) || msg.content;
                         }
                     }
-                }
-                this.streamBuffers.delete(aiMsgId);
-                this.saveCurrentSession();
-             });
-        },
-        'deepseek-chat',
-        userStore.baseUrl
-      );
-  }
+                    this.streamBuffers.delete(aiMsgId);
+                    this.saveCurrentSession();
 
-  get needsSummary() {
-      const bot = Bots.find(b => b.id === this.sessionType);
-      if (!bot?.summary || this.messages.length === 0) return false;
-      const hour = new Date().getHours();
-      // 22:00 - 23:30 (Requirement)
-      // Check if already summarized (last message is assistant?)
-      const lastMsg = this.messages[this.messages.length - 1];
-      const hasSummary = lastMsg.role === 'assistant' && lastMsg.content.includes("复盘");
-      
-      return (hour >= 20 || (hour === 23 && new Date().getMinutes() <= 30)) && !hasSummary;
-  }
+                    // Update Badge/Title
+                    const session = this.sessions.find(s => s.id === this.currentSessionId);
+                    if (session) {
+                        session.title = `今日复盘-${new Date().toLocaleDateString()}`;
+                        this.saveSessions();
+                    }
+                });
+            },
+            (err) => {
+                runInAction(() => {
+                    this.isStreaming = false;
+                    const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);
+                    if (msgIndex !== -1) {
+                        const msg = this.messages[msgIndex];
+                        if (msg.type === 'streaming') {
+                            msg.status = 'failed';
+                            const buffer = this.streamBuffers.get(aiMsgId) || '';
+                            msg.content = buffer + `\n[Summary Error: ${err.message}]`;
+
+                            if (err.status === 401 || err.status === 402) {
+                                this.apiErrorStatus = err.status;
+                            }
+                        }
+                    }
+                    this.streamBuffers.delete(aiMsgId);
+                    this.saveCurrentSession();
+                });
+            },
+            'deepseek-chat',
+            userStore.baseUrl
+        );
+    }
+
+    get needsSummary() {
+        const bot = Bots.find(b => b.id === this.sessionType);
+        if (!bot?.showSummaryPrompt || this.messages.length === 0) return false;
+        const hour = new Date().getHours();
+        // 22:00 - 23:30 (Requirement)
+        // Check if already summarized (last message is assistant?)
+        const lastMsg = this.messages[this.messages.length - 1];
+        const hasSummary = lastMsg.role === 'assistant' && lastMsg.content.includes("复盘");
+
+        return (hour >= 20 || (hour === 23 && new Date().getMinutes() <= 30)) && !hasSummary;
+    }
 }
 
 export const chatStore = new ChatStore();
