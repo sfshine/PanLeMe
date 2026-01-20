@@ -37,7 +37,7 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
             {/* Content */}
             <View style={styles.contentContainer}>
                 <Text style={[styles.roleLabel, { color: theme.colors.black }]}>
-                    {isUser ? '你' : '盘'}
+                    {isUser ? '你' : '小盘'}
                 </Text>
                 <MessageContent message={message} theme={theme} />
             </View>
