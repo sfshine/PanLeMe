@@ -17,11 +17,9 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
                 <View style={[styles.logoCircle, { backgroundColor: theme.colors.grey4 }]}>
                     <Icon name="star" type="feather" color={theme.colors.primary} size={40} />
                 </View>
-                <Text style={[styles.title, { color: theme.colors.black }]}>
-                    三星
-                </Text>
+
                 <Text style={[styles.subtitle, { color: theme.colors.grey2 }]}>
-                    记录美好，留住感动
+                    记录生活美好，吾日三省吾身
                 </Text>
             </View>
 
@@ -64,6 +62,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
+        paddingBottom: 80, // Offset to push content up for better optical centering
     },
     logoContainer: {
         alignItems: 'center',

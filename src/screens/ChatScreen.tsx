@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid } from 'react-native';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,9 +50,9 @@ export const ChatScreen = observer(({ navigation }: any) => {
   };
 
   const getSessionTitle = () => {
-    if (chatStore.sessionType === 'unselected') return '三星';
+    if (chatStore.sessionType === 'unselected') return '三省';
     const bot = Bots.find(b => b.id === chatStore.sessionType);
-    return bot ? bot.title : '三星';
+    return bot ? bot.title : '三省';
   };
 
   return (
@@ -69,16 +69,28 @@ export const ChatScreen = observer(({ navigation }: any) => {
         >
           <Icon name="menu" color={theme.colors.grey2} size={24} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.titleContainer}
-          onPress={() => setShowBotSelector(true)}
-        >
-          <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
-          <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
-        </TouchableOpacity>
+        {chatStore.sessionType !== 'unselected' && (
+          <TouchableOpacity
+            style={styles.titleContainer}
+            onPress={() => setShowBotSelector(true)}
+          >
+            <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
+            <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.newChatButton}
-          onPress={() => chatStore.startNewSession('unselected')}
+          onPress={() => {
+            if (chatStore.sessionType === 'unselected') {
+              if (Platform.OS === 'android') {
+                ToastAndroid.show('请在下方选择一个话题开始。', ToastAndroid.SHORT);
+              } else {
+                Alert.alert('提示', '请在下方选择一个话题开始。');
+              }
+            } else {
+              chatStore.startNewSession('unselected');
+            }
+          }}
         >
           <Icon name="edit" type="feather" color={theme.colors.grey2} size={20} />
         </TouchableOpacity>
@@ -144,7 +156,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
               </TouchableOpacity>
             </View>
             <Text style={[styles.disclaimer, { color: theme.colors.grey2 }]}>
-              三星可能会出错，请核实重要信息。
+              三省可能会出错，请核实重要信息。
             </Text>
           </View>
         </>
@@ -228,7 +240,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderRadius: 24,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -243,6 +255,7 @@ const styles = StyleSheet.create({
     maxHeight: 160,
     paddingTop: 0,
     paddingBottom: 0,
+    textAlignVertical: 'center',
   },
   sendButton: {
     width: 32,
