@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid, StatusBar } from 'react-native';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -89,7 +89,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
       {/* ChatGPT Style Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5, paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.grey5, paddingTop: (Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 0) : insets.top) + 8 }]}>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
