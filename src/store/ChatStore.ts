@@ -4,7 +4,7 @@ import { StorageService, StorageKeys } from '../services/StorageService';
 import { userStore } from './UserStore';
 import { Message, SessionType, Session } from '../types/ChatTypes';
 // import { Prompts } from '../config/Prompts'; // Removed
-import { Bots, SummaryConfig } from '../config/Bots';
+import { Bots } from '../config/Bots';
 
 class ChatStore {
   messages: Message[] = [];
@@ -43,11 +43,18 @@ class ChatStore {
   saveCurrentSession() {
       if (!this.currentSessionId || this.sessionType === 'unselected') return;
       
+      // Optimization: Don't save if it's a new session and user hasn't sent anything yet
+      const existing = this.sessions.find(s => s.id === this.currentSessionId);
+      const hasUserMessage = this.messages.some(m => m.role === 'user');
+      
+      if (!existing && !hasUserMessage) {
+          return;
+      }
+      
       const key = `session_${this.currentSessionId}`;
       StorageService.setString(key, JSON.stringify(this.messages));
       
       // Update session list if new or title changed (MVP: Title = Date)
-      const existing = this.sessions.find(s => s.id === this.currentSessionId);
       if (!existing) {
           const bot = Bots.find(b => b.id === this.sessionType);
           const title = bot 
@@ -310,7 +317,8 @@ class ChatStore {
   }
 
   async generateSummary() {
-      if (this.sessionType !== 'daily' || !userStore.apiKey) return;
+      const bot = Bots.find(b => b.id === this.sessionType);
+      if (!bot?.summary || !userStore.apiKey) return;
       
       this.isStreaming = true;
       const aiMsgId = (Date.now() + 1).toString();
@@ -380,7 +388,7 @@ class ChatStore {
           .map(m => `${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}: ${m.content}`)
           .join('\n');
 
-      const systemPrompt = SummaryConfig.systemPrompt;
+      const systemPrompt = bot.summary;
 
       const promptMessages = [
           { role: 'system', content: systemPrompt },
@@ -446,7 +454,8 @@ class ChatStore {
   }
 
   get needsSummary() {
-      if (this.sessionType !== 'daily' || this.messages.length === 0) return false;
+      const bot = Bots.find(b => b.id === this.sessionType);
+      if (!bot?.summary || this.messages.length === 0) return false;
       const hour = new Date().getHours();
       // 22:00 - 23:30 (Requirement)
       // Check if already summarized (last message is assistant?)

@@ -105,22 +105,41 @@ export const ChatScreen = observer(({ navigation }: any) => {
             <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={styles.newChatButton}
-          onPress={() => {
-            if (chatStore.sessionType === 'unselected') {
-              if (Platform.OS === 'android') {
-                ToastAndroid.show('请在下方选择一个话题开始。', ToastAndroid.SHORT);
+        <View style={styles.headerRight}>
+          {Bots.find(b => b.id === chatStore.sessionType)?.summary && (
+            <TouchableOpacity
+              style={styles.headerRightButton}
+              onPress={() => {
+                Alert.alert(
+                  '确认生成复盘？',
+                  '将根据今日记录生成一份总结。',
+                  [
+                    { text: '取消', style: 'cancel' },
+                    { text: '生成', onPress: () => chatStore.generateSummary() }
+                  ]
+                );
+              }}
+            >
+              <Icon name="sparkles" type="ionicon" color={theme.colors.primary} size={20} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.headerRightButton}
+            onPress={() => {
+              if (chatStore.sessionType === 'unselected') {
+                if (Platform.OS === 'android') {
+                  ToastAndroid.show('请在下方选择一个话题开始。', ToastAndroid.SHORT);
+                } else {
+                  Alert.alert('提示', '请在下方选择一个话题开始。');
+                }
               } else {
-                Alert.alert('提示', '请在下方选择一个话题开始。');
+                chatStore.startNewSession('unselected');
               }
-            } else {
-              chatStore.startNewSession('unselected');
-            }
-          }}
-        >
-          <Icon name="edit" type="feather" color={theme.colors.grey2} size={20} />
-        </TouchableOpacity>
+            }}
+          >
+            <Icon name="edit" type="feather" color={theme.colors.grey2} size={20} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {showSummaryPrompt && (
@@ -249,7 +268,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  newChatButton: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRightButton: {
     padding: 8,
   },
   listContent: {
