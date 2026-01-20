@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,12 +29,18 @@ export const ChatScreen = observer(({ navigation }: any) => {
   }, [chatStore.messages.length]);
 
   const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
+  const [showBotSelector, setShowBotSelector] = useState(false);
 
   const handleSummaryAction = (action: 'yes' | 'no') => {
     setShowSummaryPrompt(false);
     if (action === 'yes') {
       chatStore.generateSummary();
     }
+  };
+
+  const handleBotSelect = (botId: string) => {
+    setShowBotSelector(false);
+    chatStore.startNewSession(botId);
   };
 
   const handleSend = () => {
@@ -63,10 +69,13 @@ export const ChatScreen = observer(({ navigation }: any) => {
         >
           <Icon name="menu" color={theme.colors.grey2} size={24} />
         </TouchableOpacity>
-        <View style={styles.titleContainer}>
+        <TouchableOpacity
+          style={styles.titleContainer}
+          onPress={() => setShowBotSelector(true)}
+        >
           <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
           <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.newChatButton}
           onPress={() => chatStore.startNewSession('unselected')}
@@ -140,6 +149,42 @@ export const ChatScreen = observer(({ navigation }: any) => {
           </View>
         </>
       )}
+
+      {/* Bot Switching Modal */}
+      <Modal
+        visible={showBotSelector}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowBotSelector(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowBotSelector(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.black }]}>切换助手</Text>
+            {Bots.map(bot => (
+              <TouchableOpacity
+                key={bot.id}
+                style={[styles.botOption, { borderBottomColor: theme.colors.grey5 }]}
+                onPress={() => handleBotSelect(bot.id)}
+              >
+                <View style={[styles.botIconSmall, { backgroundColor: 'rgba(16, 163, 127, 0.1)' }]}>
+                  <Icon name={bot.icon} type="feather" size={20} color={theme.colors.primary} />
+                </View>
+                <View style={styles.botOptionContent}>
+                  <Text style={[styles.botOptionTitle, { color: theme.colors.black }]}>{bot.name}</Text>
+                  <Text style={[styles.botOptionDesc, { color: theme.colors.grey2 }]}>{bot.description}</Text>
+                </View>
+                {chatStore.sessionType === bot.id && (
+                  <Icon name="check" type="feather" size={20} color={theme.colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </KeyboardAvoidingView>
   );
 });
@@ -163,6 +208,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    padding: 4, // Make touch target slightly larger
   },
   headerTitle: {
     fontSize: 16,
@@ -241,5 +287,58 @@ const styles = StyleSheet.create({
   },
   summaryButtonTextClear: {
     fontSize: 14,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  botOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+  },
+  botIconSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  botOptionContent: {
+    flex: 1,
+  },
+  botOptionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  botOptionDesc: {
+    fontSize: 12,
   },
 });
