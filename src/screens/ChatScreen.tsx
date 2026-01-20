@@ -188,7 +188,21 @@ export const ChatScreen = observer(({ navigation }: any) => {
           styles.summaryPrompt,
           {
             backgroundColor: theme.colors.grey0,
-            marginTop: headerHeight + 8 // Push down below floating header
+            position: 'absolute',
+            top: headerHeight + 8,
+            left: 16,
+            right: 16,
+            marginHorizontal: 0,
+            marginTop: 0,
+            zIndex: 100,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: 2,
+            },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
           }
         ]}>
           <Text style={[styles.summaryText, { color: theme.colors.black }]}>
@@ -223,12 +237,6 @@ export const ChatScreen = observer(({ navigation }: any) => {
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
             contentContainerStyle={[
               styles.listContent,
-              // If summary prompt is NOT shown, we need padding for header.
-              // If summary prompt IS shown, the list layout starts below it (due to marginTop on prompt),
-              // so we don't need header padding on list itself?
-              // Actually, if prompt is shown, list is flex 1 below it.
-              // If prompt is hidden, list is flex 1 at top.
-              !showSummaryPrompt && { paddingTop: headerHeight }
             ]}
             inverted
             style={{ flex: 1 }}
@@ -329,8 +337,6 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   listContent: {
-    paddingTop: 20,
-    paddingBottom: 10,
     flexGrow: 1,
     justifyContent: 'flex-end',
   },
