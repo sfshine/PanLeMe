@@ -99,7 +99,8 @@ export const ChatScreen = observer(({ navigation }: any) => {
     return bot ? bot.title : '盘了么';
   };
 
-  const headerHeight = (insets.top || StatusBar.currentHeight || 0) + 48;
+  const topInset = Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 0) : insets.top;
+  const headerHeight = topInset + 48;
 
   return (
     <KeyboardAvoidingView
@@ -113,7 +114,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
         {
           backgroundColor: theme.colors.background,
           borderBottomColor: theme.colors.grey5,
-          paddingTop: (Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 0) : insets.top) + 2,
+          paddingTop: topInset,
           position: 'absolute',
           top: 0,
           left: 0,
@@ -128,16 +129,19 @@ export const ChatScreen = observer(({ navigation }: any) => {
         >
           <Icon name="menu" color={theme.colors.grey2} size={24} />
         </TouchableOpacity>
+
         {chatStore.sessionType !== 'unselected' && (
-          <TouchableOpacity
-            style={styles.titleContainer}
-            onPress={() => setShowBotSelector(true)}
-          >
-            <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
-            <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
-          </TouchableOpacity>
+          <View style={[styles.headerCenter, { top: topInset }]} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.titleContainer}
+              onPress={() => setShowBotSelector(true)}
+            >
+              <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
+              <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
+            </TouchableOpacity>
+          </View>
         )}
-        <View style={{ flexDirection: 'row' }}>
+        <View style={[styles.headerRight, { zIndex: 11 }]}>
           {/* Manual Summary Trigger */}
           {(() => {
             const bot = Bots.find(b => b.id === chatStore.sessionType);
@@ -288,11 +292,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 10,
     borderBottomWidth: 0.5,
+  },
+  headerCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuButton: {
     padding: 8,
+    zIndex: 11,
   },
   titleContainer: {
     flexDirection: 'row',

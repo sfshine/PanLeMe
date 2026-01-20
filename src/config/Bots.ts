@@ -6,7 +6,7 @@ export interface SummarySettings {
 
 export interface BotConfig {
     id: string;
-    name: string;      // Display name on card (e.g., "高兴的事情")
+    name: string;      // Display name on card (e.g., "高兴的三件事")
     title: string;     // Header title (e.g., "今日小确幸")
     description: string; // Card description
     icon: string;      // Icon name (feather icons)
@@ -18,7 +18,7 @@ export interface BotConfig {
 export const Bots: BotConfig[] = [
     {
         id: 'happy',
-        name: "高兴的事情",
+        name: "高兴的三件事",
         title: "今日小确幸",
         description: "分享今天的快乐时刻",
         icon: "smile",

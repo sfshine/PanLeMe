@@ -481,6 +481,11 @@ class ChatStore {
 
     get needsSummary() {
         if (this.messages.length === 0) return false;
+
+        // 如果没有用户发送的消息，不需要复盘
+        const hasUserMessage = this.messages.some(m => m.role === 'user' && m.type !== 'request-summary');
+        if (!hasUserMessage) return false;
+
         const bot = Bots.find(b => b.id === this.sessionType);
         const summaryConfig = bot?.summary;
 
