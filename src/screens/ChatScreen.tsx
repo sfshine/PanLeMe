@@ -72,6 +72,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
   }, [chatStore.apiErrorStatus]);
 
   const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
+  const [summaryHeight, setSummaryHeight] = useState(0);
   const [showBotSelector, setShowBotSelector] = useState(false);
 
   const handleSummaryAction = (action: 'yes' | 'no') => {
@@ -189,6 +190,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
         topOffset={headerHeight + 8}
         onConfirm={() => handleSummaryAction('yes')}
         onCancel={() => handleSummaryAction('no')}
+        onLayout={(e) => setSummaryHeight(e.nativeEvent.layout.height)}
       />
 
       {chatStore.sessionType === 'unselected' ? (
@@ -205,6 +207,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
             renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
             contentContainerStyle={[
               styles.listContent,
+              { paddingBottom: headerHeight + (showSummaryPrompt ? summaryHeight + 16 : 8) }
             ]}
             inverted
             style={{ flex: 1 }}
