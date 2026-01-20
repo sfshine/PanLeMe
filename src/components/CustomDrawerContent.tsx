@@ -31,7 +31,7 @@ export const CustomDrawerContent = observer((props: any) => {
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.grey3 }]}>
             {/* New Chat Button */}
-            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+            <View style={[styles.header, { paddingTop: insets.top + 24 }]}>
                 <TouchableOpacity
                     style={[styles.newChatButton, { borderColor: theme.colors.grey5 }]}
                     onPress={handleNewSession}
@@ -44,7 +44,9 @@ export const CustomDrawerContent = observer((props: any) => {
 
             {/* Sessions List */}
             <DrawerContentScrollView {...props} style={styles.scrollView}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>历史记录</Text>
+                {chatStore.sessions.length > 0 && (
+                    <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>历史记录</Text>
+                )}
                 {chatStore.sessions.map((session) => (
                     <TouchableOpacity
                         key={session.id}

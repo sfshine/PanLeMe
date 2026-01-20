@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import { StorageService, StorageKeys } from '../services/StorageService';
 
 class UserStore {
-  apiKey: string | null = null;
+  apiKey: string | null = 'sk-5a712ff6c94349d588e7acb3cdd57810';
   baseUrl: string = 'https://api.deepseek.com';
   hasHydrated: boolean = false;
 
@@ -16,6 +16,9 @@ class UserStore {
     const url = StorageService.getString(StorageKeys.BASE_URL);
     if (key) {
       this.apiKey = key;
+    } else {
+      // Set default key if not exists in storage
+      this.apiKey = 'sk-5a712ff6c94349d588e7acb3cdd57810';
     }
     if (url) {
       this.baseUrl = url;

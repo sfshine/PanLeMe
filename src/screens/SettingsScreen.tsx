@@ -71,7 +71,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Text style={[styles.headerTitle, { color: theme.colors.black }]}>设置</Text>
+          <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>设置</Text>
         </View>
 
         <View style={styles.headerRightPlaceholder} />
@@ -84,7 +84,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
           {userStore.isConfigured ? (
             <View style={[styles.configuredContainer, { backgroundColor: theme.colors.grey0 }]}>
               <View style={styles.keyDisplay}>
-                <Text style={[styles.keyText, { color: theme.colors.black }]}>
+                <Text style={[styles.keyText, { color: '#FFFFFF' }]}>
                   Key: {userStore.apiKey?.slice(0, 3)}...{userStore.apiKey?.slice(-4)}
                 </Text>
                 <Icon name="check-circle" type="material" color={theme.colors.success} size={20} />
@@ -115,6 +115,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
                 }
                 label="DeepSeek API Key"
                 labelStyle={{ color: theme.colors.grey3, fontSize: 14, fontWeight: '500' }}
+                inputStyle={{ color: '#FFFFFF' }}
                 inputContainerStyle={{ borderBottomWidth: 1, borderColor: theme.colors.grey5 }}
                 containerStyle={{ paddingHorizontal: 0 }}
               />
@@ -138,13 +139,13 @@ export const SettingsScreen = observer(({ navigation }: any) => {
           <Text style={[styles.sectionTitle, { color: theme.colors.grey3 }]}>关于</Text>
           <ListItem bottomDivider containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
-              <ListItem.Title style={{ color: theme.colors.black }}>版本</ListItem.Title>
+              <ListItem.Title style={{ color: '#FFFFFF' }}>版本</ListItem.Title>
               <ListItem.Subtitle style={{ color: theme.colors.grey3 }}>1.0.0 (MVP)</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
           <ListItem containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
-              <ListItem.Title style={{ color: theme.colors.black }}>隐私政策</ListItem.Title>
+              <ListItem.Title style={{ color: '#FFFFFF' }}>隐私政策</ListItem.Title>
               <ListItem.Subtitle style={{ color: theme.colors.grey3 }}>数据存储在本地。</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
