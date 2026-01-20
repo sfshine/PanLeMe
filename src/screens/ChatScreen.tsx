@@ -8,6 +8,7 @@ import { useNavigation, DrawerActions } from '@react-navigation/native';
 import MessageBubble from '../components/MessageBubble';
 import GuidePage from '../components/GuidePage';
 import { Bots } from '../config/Bots';
+import SummaryPrompt from '../components/SummaryPrompt';
 
 export const ChatScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
@@ -183,45 +184,12 @@ export const ChatScreen = observer(({ navigation }: any) => {
         </View>
       </View>
 
-      {showSummaryPrompt && (
-        <View style={[
-          styles.summaryPrompt,
-          {
-            backgroundColor: theme.colors.grey0,
-            position: 'absolute',
-            top: headerHeight + 8,
-            left: 16,
-            right: 16,
-            marginHorizontal: 0,
-            marginTop: 0,
-            zIndex: 100,
-            shadowColor: "#000",
-            shadowOffset: {
-              width: 0,
-              height: 2,
-            },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }
-        ]}>
-          <Text style={[styles.summaryText, { color: theme.colors.black }]}>
-            🌙 晚安，需要为你生成今日复盘吗？
-          </Text>
-          <TouchableOpacity
-            style={[styles.summaryButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => handleSummaryAction('yes')}
-          >
-            <Text style={styles.summaryButtonText}>好呀</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.summaryButtonClear}
-            onPress={() => handleSummaryAction('no')}
-          >
-            <Text style={[styles.summaryButtonTextClear, { color: theme.colors.grey2 }]}>下次</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <SummaryPrompt
+        visible={showSummaryPrompt}
+        topOffset={headerHeight + 8}
+        onConfirm={() => handleSummaryAction('yes')}
+        onCancel={() => handleSummaryAction('no')}
+      />
 
       {chatStore.sessionType === 'unselected' ? (
         <View style={{ flex: 1, paddingTop: headerHeight }}>
@@ -377,37 +345,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  summaryPrompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-  },
-  summaryText: {
-    flex: 1,
-    fontSize: 14,
-  },
-  summaryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  summaryButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  summaryButtonClear: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginLeft: 4,
-  },
-  summaryButtonTextClear: {
-    fontSize: 14,
-  },
+
   // Modal Styles
   modalOverlay: {
     flex: 1,
