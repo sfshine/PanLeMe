@@ -12,6 +12,9 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
+    // Hidden internal messages
+    if (message.type === 'request-summary') return null;
+
     const isUser = message.role === 'user';
 
     return (

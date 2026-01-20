@@ -17,7 +17,11 @@ export interface StreamingMessage extends BaseMessage {
   status: StreamStatus;
 }
 
-export type Message = TextMessage | StreamingMessage;
+export interface SummaryRequestMessage extends BaseMessage {
+  type: 'request-summary';
+}
+
+export type Message = TextMessage | StreamingMessage | SummaryRequestMessage;
 
 export type SessionType = string;
 

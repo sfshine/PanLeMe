@@ -330,6 +330,17 @@ class ChatStore {
             status: 'pending'
         };
         this.cancelAllStreams();
+
+        // [NEW] Insert hidden request message to track state
+        const requestMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user', // conceptual role, but type is what matters for UI hiding
+            content: '请求生成今日复盘', // Text for debugging if needed
+            timestamp: Date.now(),
+            type: 'request-summary'
+        };
+        this.addMessage(requestMsg);
+
         this.addMessage(aiMessage);
 
         // We need to special case summary generation because it uses a different prompt strategy
@@ -501,8 +512,22 @@ class ChatStore {
         // Let's stick to "hasSummary" logic but maybe robustify it later.
 
         const lastMsg = this.messages[this.messages.length - 1];
-        const hasSummary = lastMsg.role === 'assistant' && lastMsg.content.includes("复盘");
-        return !hasSummary;
+
+        // If last message is AI response
+        if (lastMsg.role === 'assistant') {
+            // Check if the message BEFORE it was a hidden summary request
+            // We need to look at length-2
+            if (this.messages.length >= 2) {
+                const prevMsg = this.messages[this.messages.length - 2];
+                if (prevMsg && prevMsg.type === 'request-summary') {
+                    // This means the last AI message is the result of a summary request
+                    // So we don't need to show the prompt again
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
 
