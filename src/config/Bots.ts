@@ -6,8 +6,7 @@ export interface SummarySettings {
 
 export interface BotConfig {
     id: string;
-    name: string;      // Display name on card (e.g., "高兴的三件事")
-    title: string;     // Header title (e.g., "今日小确幸")
+    title: string;     // Header title (e.g., "高兴的三件事")
     description: string; // Card description
     icon: string;      // Icon name (feather icons)
     systemPrompt: string; // System prompt for the LLM
@@ -18,8 +17,7 @@ export interface BotConfig {
 export const Bots: BotConfig[] = [
     {
         id: 'happy',
-        name: "高兴的三件事",
-        title: "今日小确幸",
+        title: "高兴的三件事",
         description: "分享今天的快乐时刻",
         icon: "smile",
         initialMessage: "你好呀～我是你的专属觉察助手😘 今天有没有遇到什么开心的小事？可以先和我分享**第一件**开心的事哦～",
@@ -27,8 +25,7 @@ export const Bots: BotConfig[] = [
     },
     {
         id: 'daily',
-        name: "日常记录",
-        title: "生活记录",
+        title: "日常记录",
         description: "记录生活的点滴",
         icon: "book",
         initialMessage: "我是你的生活记录助手📝。无论是日常琐事还是重要时刻，随时发给我，我会为你妥善记录。",

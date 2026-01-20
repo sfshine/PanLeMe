@@ -37,7 +37,7 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
                         </View>
                         <View style={styles.cardContent}>
                             <Text style={[styles.cardTitle, { color: theme.colors.black }]}>
-                                {bot.name}
+                                {bot.title}
                             </Text>
                             <Text style={[styles.cardDescription, { color: theme.colors.grey2 }]}>
                                 {bot.description}

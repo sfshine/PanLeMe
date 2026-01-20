@@ -268,7 +268,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
                   <Icon name={bot.icon} type="feather" size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.botOptionContent}>
-                  <Text style={[styles.botOptionTitle, { color: theme.colors.black }]}>{bot.name}</Text>
+                  <Text style={[styles.botOptionTitle, { color: theme.colors.black }]}>{bot.title}</Text>
                   <Text style={[styles.botOptionDesc, { color: theme.colors.grey2 }]}>{bot.description}</Text>
                 </View>
                 {chatStore.sessionType === bot.id && (
