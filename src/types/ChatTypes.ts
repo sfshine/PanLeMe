@@ -18,7 +18,7 @@ export interface StreamingMessage extends BaseMessage {
 
 export type Message = TextMessage | StreamingMessage;
 
-export type SessionType = 'happy' | 'daily' | 'unselected';
+export type SessionType = string;
 
 export interface Session {
   id: string;

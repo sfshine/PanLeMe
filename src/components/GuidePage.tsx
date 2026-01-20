@@ -2,8 +2,9 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Icon, useTheme } from '@rneui/themed';
 
+import { Bots } from '../config/Bots';
 interface GuidePageProps {
-    onSelect: (type: 'happy' | 'daily') => void;
+    onSelect: (type: string) => void;
 }
 
 const GuidePage = ({ onSelect }: GuidePageProps) => {
@@ -26,43 +27,27 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
 
             {/* Option Cards */}
             <View style={styles.cardsContainer}>
-                <TouchableOpacity
-                    style={[styles.card, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}
-                    onPress={() => onSelect('happy')}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.cardIcon, { backgroundColor: 'rgba(16, 163, 127, 0.15)' }]}>
-                        <Icon name="smile" type="feather" size={24} color={theme.colors.primary} />
-                    </View>
-                    <View style={styles.cardContent}>
-                        <Text style={[styles.cardTitle, { color: theme.colors.black }]}>
-                            高兴的事情
-                        </Text>
-                        <Text style={[styles.cardDescription, { color: theme.colors.grey2 }]}>
-                            分享今天的快乐时刻
-                        </Text>
-                    </View>
-                    <Icon name="chevron-right" type="feather" size={20} color={theme.colors.grey2} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.card, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}
-                    onPress={() => onSelect('daily')}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.cardIcon, { backgroundColor: 'rgba(16, 163, 127, 0.15)' }]}>
-                        <Icon name="book" type="feather" size={24} color={theme.colors.primary} />
-                    </View>
-                    <View style={styles.cardContent}>
-                        <Text style={[styles.cardTitle, { color: theme.colors.black }]}>
-                            日常记录
-                        </Text>
-                        <Text style={[styles.cardDescription, { color: theme.colors.grey2 }]}>
-                            记录生活的点滴
-                        </Text>
-                    </View>
-                    <Icon name="chevron-right" type="feather" size={20} color={theme.colors.grey2} />
-                </TouchableOpacity>
+                {Bots.map((bot) => (
+                    <TouchableOpacity
+                        key={bot.id}
+                        style={[styles.card, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}
+                        onPress={() => onSelect(bot.id)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.cardIcon, { backgroundColor: 'rgba(16, 163, 127, 0.15)' }]}>
+                            <Icon name={bot.icon} type="feather" size={24} color={theme.colors.primary} />
+                        </View>
+                        <View style={styles.cardContent}>
+                            <Text style={[styles.cardTitle, { color: theme.colors.black }]}>
+                                {bot.name}
+                            </Text>
+                            <Text style={[styles.cardDescription, { color: theme.colors.grey2 }]}>
+                                {bot.description}
+                            </Text>
+                        </View>
+                        <Icon name="chevron-right" type="feather" size={20} color={theme.colors.grey2} />
+                    </TouchableOpacity>
+                ))}
             </View>
 
             {/* Bottom hint */}

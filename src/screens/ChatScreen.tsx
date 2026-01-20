@@ -7,6 +7,7 @@ import { chatStore } from '../store/ChatStore';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import MessageBubble from '../components/MessageBubble';
 import GuidePage from '../components/GuidePage';
+import { Bots } from '../config/Bots';
 
 export const ChatScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
@@ -44,7 +45,8 @@ export const ChatScreen = observer(({ navigation }: any) => {
 
   const getSessionTitle = () => {
     if (chatStore.sessionType === 'unselected') return '三星';
-    return chatStore.sessionType === 'happy' ? '今日小确幸' : '生活记录';
+    const bot = Bots.find(b => b.id === chatStore.sessionType);
+    return bot ? bot.title : '三星';
   };
 
   return (
@@ -65,7 +67,10 @@ export const ChatScreen = observer(({ navigation }: any) => {
           <Text style={[styles.headerTitle, { color: theme.colors.black }]}>{getSessionTitle()}</Text>
           <Icon name="chevron-down" type="feather" color={theme.colors.grey2} size={16} />
         </View>
-        <TouchableOpacity style={styles.newChatButton}>
+        <TouchableOpacity
+          style={styles.newChatButton}
+          onPress={() => chatStore.startNewSession('unselected')}
+        >
           <Icon name="edit" type="feather" color={theme.colors.grey2} size={20} />
         </TouchableOpacity>
       </View>
@@ -110,7 +115,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
           <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background }]}>
             <View style={[styles.inputContainer, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}>
               <TextInput
-                placeholder={chatStore.sessionType === 'daily' ? "输入此刻想记录的内容吧" : "分享你的开心事..."}
+                placeholder={Bots.find(b => b.id === chatStore.sessionType)?.description || "输入内容..."}
                 placeholderTextColor={theme.colors.grey2}
                 value={inputText}
                 onChangeText={setInputText}

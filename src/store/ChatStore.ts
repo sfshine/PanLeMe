@@ -3,7 +3,8 @@ import { LLMService } from '../services/LLMService';
 import { StorageService, StorageKeys } from '../services/StorageService';
 import { userStore } from './UserStore';
 import { Message, SessionType, Session } from '../types/ChatTypes';
-import { Prompts } from '../config/Prompts';
+// import { Prompts } from '../config/Prompts'; // Removed
+import { Bots, SummaryConfig } from '../config/Bots';
 
 class ChatStore {
   messages: Message[] = [];
@@ -47,9 +48,10 @@ class ChatStore {
       // Update session list if new or title changed (MVP: Title = Date)
       const existing = this.sessions.find(s => s.id === this.currentSessionId);
       if (!existing) {
-          const title = this.sessionType === 'happy' 
-            ? `今日小确幸-${new Date().toLocaleDateString()}` 
-            : `生活记录-${new Date().toLocaleDateString()}`;
+          const bot = Bots.find(b => b.id === this.sessionType);
+          const title = bot 
+            ? `${bot.title}-${new Date().toLocaleDateString()}` 
+            : `新会话-${new Date().toLocaleDateString()}`;
             
           this.sessions.unshift({
               id: this.currentSessionId,
@@ -79,7 +81,7 @@ class ChatStore {
       this.saveSessions();
       StorageService.removeItem(`session_${id}`);
       if (this.currentSessionId === id) {
-          this.startNewSession('happy'); // Reset to default
+          this.startNewSession('unselected'); // Reset to default
       }
   }
 
@@ -102,26 +104,16 @@ class ChatStore {
   initializeSession(type: SessionType) {
       this.sessionType = type;
       
-      // Initial Prompt triggers
-      if (type === 'happy') {
-        this.addMessage({
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: Prompts.Happy.Initial,
-          timestamp: Date.now(),
-          type: 'streaming',
-          status: 'pending'
-        });
-      } else {
-           // Daily record greeting
-           this.addMessage({
-             id: Date.now().toString(),
-             role: 'assistant',
-             content: Prompts.Daily.Initial,
-             timestamp: Date.now(),
-             type: 'streaming',
-             status: 'pending'
-           });
+      const bot = Bots.find(b => b.id === type);
+      if (bot) {
+         this.addMessage({
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: bot.initialMessage,
+            timestamp: Date.now(),
+            type: 'streaming',
+            status: 'pending'
+         });
       }
       this.saveCurrentSession();
   }
@@ -221,11 +213,13 @@ class ChatStore {
       const previousMessages = this.messages.slice(0, msgIndex).map(m => ({ role: m.role, content: m.content }));
 
       let systemPrompt = "";
-      if (this.sessionType === 'happy') {
-          systemPrompt = Prompts.Happy.System;
-      } else {
-          systemPrompt = Prompts.Daily.System;
+      const bot = Bots.find(b => b.id === this.sessionType);
+      if (bot) {
+          systemPrompt = bot.systemPrompt;
       }
+      
+      // Fallback or legacy handling if needed, but optimally we expect a valid bot
+
 
       console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
 
@@ -369,7 +363,7 @@ class ChatStore {
           .map(m => `${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}: ${m.content}`)
           .join('\n');
 
-      const systemPrompt = Prompts.Summary.System;
+      const systemPrompt = SummaryConfig.systemPrompt;
 
       const promptMessages = [
           { role: 'system', content: systemPrompt },
