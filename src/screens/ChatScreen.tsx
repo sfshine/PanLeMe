@@ -1,152 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { Input, Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
-import { chatStore, Message } from '../store/ChatStore';
-import Markdown from 'react-native-markdown-display';
+import { chatStore } from '../store/ChatStore';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
-
-// 打字机效果组件
-interface TypewriterTextProps {
-  content: string;
-  isStreaming?: boolean;
-  speed?: number; // 每个字符的显示间隔(ms)
-  theme: any;
-  onComplete?: () => void;
-}
-
-const TypewriterText = ({ content, isStreaming, speed = 30, theme, onComplete }: TypewriterTextProps) => {
-  const [displayedContent, setDisplayedContent] = useState('');
-  const [isComplete, setIsComplete] = useState(false);
-  const indexRef = useRef(0);
-  const contentRef = useRef(content);
-
-  useEffect(() => {
-    // 如果是流式消息，直接显示全部内容
-    if (isStreaming) {
-      setDisplayedContent(content);
-      return;
-    }
-
-    // 如果内容改变了，重置状态（用于动态内容）
-    if (contentRef.current !== content) {
-      contentRef.current = content;
-      // 对于已完成的新消息，启动打字机效果
-      if (!isComplete) {
-        indexRef.current = 0;
-        setDisplayedContent('');
-      }
-    }
-
-    // 如果已完成打字效果或者内容为空，不需要动画
-    if (isComplete || !content) {
-      setDisplayedContent(content);
-      return;
-    }
-
-    // 打字机效果
-    if (indexRef.current < content.length) {
-      const timer = setTimeout(() => {
-        indexRef.current += 1;
-        setDisplayedContent(content.slice(0, indexRef.current));
-      }, speed);
-      return () => clearTimeout(timer);
-    } else {
-      // 打字完成
-      setIsComplete(true);
-      onComplete?.();
-    }
-  }, [content, displayedContent, isStreaming, speed, isComplete, onComplete]);
-
-  // 流式消息完成时，标记打字完成
-  useEffect(() => {
-    if (!isStreaming && contentRef.current === content && indexRef.current >= content.length) {
-      setIsComplete(true);
-    }
-  }, [isStreaming, content]);
-
-  return (
-    <Markdown style={{
-      body: { color: theme.colors.black, fontSize: 16 },
-      paragraph: { marginTop: 0, marginBottom: 0 }
-    }}>
-      {displayedContent || ' '}
-    </Markdown>
-  );
-};
-
-// 追踪已显示过的消息ID，避免重复播放打字机效果
-const displayedMessageIds = new Set<string>();
-
-const MessageBubble = ({ message, theme }: { message: Message, theme: any }) => {
-  const isUser = message.role === 'user';
-  // 判断是否需要打字机效果：只对新的、未显示过的 AI 消息使用
-  const needsTypewriter = !isUser && !displayedMessageIds.has(message.id);
-
-  // 标记消息已显示
-  useEffect(() => {
-    if (!isUser) {
-      displayedMessageIds.add(message.id);
-    }
-  }, [message.id, isUser]);
-
-  return (
-    <View style={[
-      styles.bubbleContainer,
-      isUser ? styles.userBubbleAlign : styles.aiBubbleAlign
-    ]}>
-      <View style={[
-        styles.bubble,
-        isUser ? { backgroundColor: theme.colors.primary } : { backgroundColor: theme.colors.grey0 }
-      ]}>
-        {isUser ? (
-          <Text style={{ color: theme.colors.white }}>{message.content}</Text>
-        ) : (
-          <TypewriterText
-            content={message.content}
-            isStreaming={message.isStreaming}
-            theme={theme}
-            speed={needsTypewriter ? 30 : 0} // 已显示过的消息直接显示
-          />
-        )}
-      </View>
-      <Text style={styles.timestamp}>
-        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </Text>
-    </View>
-  );
-};
-
-const GuidePage = ({ onSelect }: { onSelect: (type: 'happy' | 'daily') => void }) => {
-  const { theme } = useTheme();
-  return (
-    <View style={styles.guideContainer}>
-      <Text h3 style={{ marginBottom: 30, color: theme.colors.black }}>想聊点什么？</Text>
-
-      <TouchableOpacity
-        style={[styles.guideCard, { backgroundColor: '#E8F5E9' }]}
-        onPress={() => onSelect('happy')}
-      >
-        <Icon name="smile" type="feather" size={40} color="#43A047" />
-        <View style={styles.guideTextContainer}>
-          <Text h4 style={{ color: '#2E7D32' }}>高兴的事情</Text>
-          <Text style={{ color: '#4CAF50', marginTop: 5 }}>分享今天的快乐时刻</Text>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.guideCard, { backgroundColor: '#E3F2FD' }]}
-        onPress={() => onSelect('daily')}
-      >
-        <Icon name="book" type="feather" size={40} color="#1E88E5" />
-        <View style={styles.guideTextContainer}>
-          <Text h4 style={{ color: '#1565C0' }}>日常记录</Text>
-          <Text style={{ color: '#42A5F5', marginTop: 5 }}>记录生活的点滴</Text>
-        </View>
-      </TouchableOpacity>
-    </View>
-  );
-};
+import MessageBubble from '../components/MessageBubble';
+import GuidePage from '../components/GuidePage';
 
 export const ChatScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
@@ -279,30 +138,6 @@ const styles = StyleSheet.create({
     padding: 10,
     paddingBottom: 20,
   },
-  bubbleContainer: {
-    marginBottom: 10,
-    maxWidth: '85%',
-  },
-  userBubbleAlign: {
-    alignSelf: 'flex-end',
-    alignItems: 'flex-end',
-  },
-  aiBubbleAlign: {
-    alignSelf: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  bubble: {
-    padding: 12,
-    borderRadius: 15,
-    minHeight: 40,
-  },
-  timestamp: {
-    fontSize: 10,
-    color: '#999',
-    marginTop: 2,
-    marginRight: 5,
-    marginLeft: 5,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,26 +158,4 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
     elevation: 2,
   },
-  guideContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  guideCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 20,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  guideTextContainer: {
-    marginLeft: 20,
-  }
 });
