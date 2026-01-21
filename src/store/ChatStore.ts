@@ -401,7 +401,7 @@ class ChatStore {
 
         // Gather content
         const records = this.messages
-            .filter(m => m.role === 'user')
+            .filter(m => m.role === 'user' && m.type !== 'request-summary')
             .map(m => `${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}: ${m.content}`)
             .join('\n');
 
@@ -487,59 +487,7 @@ class ChatStore {
     }
 
     get needsSummary() {
-        if (this.messages.length === 0) return false;
-
-        // 如果没有用户发送的消息，不需要复盘
-        const hasUserMessage = this.messages.some(m => m.role === 'user' && m.type !== 'request-summary');
-        if (!hasUserMessage) return false;
-
-        const bot = Bots.find(b => b.id === this.sessionType);
-        const summaryConfig = bot?.summary;
-
-        if (!summaryConfig) return false;
-
-        const { promptStartTime = 20, promptDuration = 5 } = summaryConfig;
-
-        // Calculate end hour (e.g., 20 + 5 = 25 -> 1 AM next day)
-        // If current hour is within [start, start + duration)
-        // Handle wrapping around midnight
-        const endHour = promptStartTime + promptDuration;
-        const currentHour = new Date().getHours();
-
-        let isInTimeWindow = false;
-        if (endHour <= 24) {
-            isInTimeWindow = currentHour >= promptStartTime && currentHour < endHour;
-        } else {
-            // Wraps around midnight (e.g. 22 to 03) -> 22..24 OR 0..3
-            const overflow = endHour - 24;
-            isInTimeWindow = (currentHour >= promptStartTime) || (currentHour < overflow);
-        }
-
-        if (!isInTimeWindow) return false;
-
-        // Check if already summarized (last message is assistant and contains specific content/flag)
-        // Better: check if an assistant message exists AFTER the start time of the window today?
-        // Simple check as per original logic: last message is assistant?
-        // But user might chat more. 
-        // Let's stick to "hasSummary" logic but maybe robustify it later.
-
-        const lastMsg = this.messages[this.messages.length - 1];
-
-        // If last message is AI response
-        if (lastMsg.role === 'assistant') {
-            // Check if the message BEFORE it was a hidden summary request
-            // We need to look at length-2
-            if (this.messages.length >= 2) {
-                const prevMsg = this.messages[this.messages.length - 2];
-                if (prevMsg && prevMsg.type === 'request-summary') {
-                    // This means the last AI message is the result of a summary request
-                    // So we don't need to show the prompt again
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return false;
     }
 }
 
