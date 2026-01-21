@@ -225,7 +225,10 @@ class ChatStore {
 
         // Prepare Context (excluding this message and newer ones, although mostly this is latest)
         // Actually strictly speaking we should send messages up to this point.
-        const previousMessages = this.messages.slice(0, msgIndex).map(m => ({ role: m.role, content: m.content }));
+        const previousMessages = this.messages.slice(0, msgIndex).map(m => ({
+            role: m.role,
+            content: `[${new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })}] ${m.content}`
+        }));
 
         let systemPrompt = "";
         const bot = Bots.find(b => b.id === this.sessionType);
@@ -239,9 +242,11 @@ class ChatStore {
         console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
 
         const fullMessages = [
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: `${systemPrompt}\n\n当前时间: ${new Date().toLocaleString('zh-CN', { hour12: false })}` },
             ...previousMessages
         ];
+
+        console.log(`[ChatStore] Request Payload for ${messageId}:`, JSON.stringify(fullMessages, null, 2));
 
         if (!userStore.apiKey) {
             runInAction(() => {
