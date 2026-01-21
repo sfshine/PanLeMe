@@ -242,7 +242,7 @@ class ChatStore {
         console.log(`[ChatStore] startStreaming - ID: ${messageId}, Type: ${this.sessionType}`);
 
         const fullMessages = [
-            { role: 'system', content: `${systemPrompt}\n\n当前时间: ${new Date().toLocaleString('zh-CN', { hour12: false })}` },
+            { role: 'system', content: systemPrompt },
             ...previousMessages
         ];
 
