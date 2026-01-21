@@ -55,7 +55,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
     try {
       console.log('Checking for update...');
       const info: any = await client.checkUpdate();
-      console.log('Update info:', info);
+      console.log('Update info received:', info);
 
       if (info.expired) {
         Alert.alert('提示', '应用版本过旧，请前往应用商店下载最新版本');
@@ -206,7 +206,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
           <ListItem bottomDivider containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
               <ListItem.Title style={{ color: theme.colors.black }}>版本</ListItem.Title>
-              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>1.0.0 (MVP)</ListItem.Subtitle>
+              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>1.0.1 (MVP)</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
           <ListItem containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>

@@ -16,7 +16,7 @@ const GuidePage = ({ onSelect }: GuidePageProps) => {
             <View style={styles.logoContainer}>
                 <View style={styles.logoCircle}>
                     <Image
-                        source={require('../../icon.png')}
+                        source={require('../assets/logo_small.png')}
                         style={styles.logoImage}
                         resizeMode="contain"
                     />

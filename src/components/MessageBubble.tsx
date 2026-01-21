@@ -31,7 +31,7 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
                     <Text style={styles.avatarText}>你</Text>
                 ) : (
                     <Image
-                        source={require('../../icon.png')}
+                        source={require('../assets/logo_small.png')}
                         style={styles.avatarImage}
                     />
                 )}
