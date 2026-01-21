@@ -206,7 +206,7 @@ export const SettingsScreen = observer(({ navigation }: any) => {
           <ListItem bottomDivider containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
               <ListItem.Title style={{ color: theme.colors.black }}>版本</ListItem.Title>
-              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>1.0.1 (MVP)</ListItem.Subtitle>
+              <ListItem.Subtitle style={{ color: theme.colors.grey2 }}>1.0.2 (MVP)</ListItem.Subtitle>
             </ListItem.Content>
           </ListItem>
           <ListItem containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
