@@ -6,6 +6,11 @@ import { StatusBar } from 'expo-status-bar';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { theme } from './src/theme/theme';
 import 'react-native-gesture-handler'; // Important for Drawer
+import { Pushy, UpdateProvider } from 'react-native-update';
+
+const pushyClient = new Pushy({
+  appKey: Platform.OS === 'ios' ? 'YOUR_IOS_APP_KEY' : 'YOUR_ANDROID_APP_KEY',
+});
 
 const App = () => {
   const lastBackPressed = useRef<number>(0);
@@ -33,8 +38,10 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <ThemeProvider theme={theme}>
-        <StatusBar style="auto" />
-        <RootNavigator />
+        <UpdateProvider client={pushyClient}>
+          <StatusBar style="auto" />
+          <RootNavigator />
+        </UpdateProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

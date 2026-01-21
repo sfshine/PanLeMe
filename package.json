@@ -36,6 +36,7 @@
     "react-native-safe-area-context": "5.6.0",
     "react-native-screens": "4.10.0",
     "react-native-sqlcipher": "0.0.7",
+    "react-native-update": "^10.37.2",
     "react-native-vector-icons": "10.3.0",
     "react-native-video": "6.16.1",
     "react-native-vision-camera": "4.7.2",

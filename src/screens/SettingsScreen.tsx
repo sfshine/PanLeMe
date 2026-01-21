@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { Button, Input, Text, ListItem, Icon, Divider, useTheme } from '@rneui/themed';
+import { Button, Divider, Icon, Input, ListItem, Text, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
+import React, { useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DrawerActions } from '@react-navigation/native';
-import { userStore } from '../store/UserStore';
+import { useUpdate } from 'react-native-update';
 import { LLMService } from '../services/LLMService';
+import { userStore } from '../store/UserStore';
+
+
 
 export const SettingsScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
@@ -13,6 +15,8 @@ export const SettingsScreen = observer(({ navigation }: any) => {
   const [apiKey, setApiKey] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [showKey, setShowKey] = useState(false);
+
+  const { client } = useUpdate();
 
   const handleVerify = async () => {
     if (!apiKey.trim()) {
@@ -37,6 +41,59 @@ export const SettingsScreen = observer(({ navigation }: any) => {
       ]);
     } else {
       Alert.alert('验证失败', 'API Key 无效或网络错误。请检查 API Key 是否正确。');
+    }
+  };
+
+  const handleCheckUpdate = async () => {
+    if (!client) return;
+
+    if (__DEV__) {
+      Alert.alert('提示', '开发环境无法检查热更新');
+      return;
+    }
+
+    try {
+      console.log('Checking for update...');
+      const info: any = await client.checkUpdate();
+      console.log('Update info:', info);
+
+      if (info.expired) {
+        Alert.alert('提示', '应用版本过旧，请前往应用商店下载最新版本');
+      } else if (info.update) {
+        const description = info.description || '';
+        const meta = info.metaInfo ? `\nMeta: ${info.metaInfo}` : '';
+        Alert.alert('发现新版本', `版本: ${info.name}\n${description}${meta}`, [
+          { text: '取消', style: 'cancel' },
+          {
+            text: '立即更新',
+            onPress: async () => {
+              try {
+                console.log('Downloading update...');
+                const hash = await client.downloadUpdate(
+                  info,
+                  (progress) => {
+                    console.log('Download progress:', progress);
+                  }
+                );
+                if (hash) {
+                  Alert.alert('提示', '更新下载完毕，是否立即重启生效？', [
+                    { text: '稍后', style: 'cancel' },
+                    { text: '立即重启', onPress: () => client.switchVersion(hash) }
+                  ]);
+                }
+              } catch (err) {
+                console.error(err);
+                Alert.alert('更新失败', '下载更新失败，请重试');
+              }
+            }
+          }
+        ]);
+      } else {
+        Alert.alert('提示', '当前已是最新版本');
+      }
+    } catch (err) {
+      console.error('Check update error:', err);
+      Alert.alert('错误', '检查更新失败');
     }
   };
 
@@ -137,6 +194,15 @@ export const SettingsScreen = observer(({ navigation }: any) => {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.grey2 }]}>关于</Text>
+          <ListItem
+            containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}
+            onPress={handleCheckUpdate}
+          >
+            <ListItem.Content>
+              <ListItem.Title style={{ color: theme.colors.black }}>检查更新</ListItem.Title>
+            </ListItem.Content>
+            <ListItem.Chevron />
+          </ListItem>
           <ListItem bottomDivider containerStyle={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}>
             <ListItem.Content>
               <ListItem.Title style={{ color: theme.colors.black }}>版本</ListItem.Title>
