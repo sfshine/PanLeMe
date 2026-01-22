@@ -223,7 +223,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
           />
 
           {/* ChatGPT Style Input */}
-          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background, paddingBottom: Math.max(insets.bottom, 15) }]}>
             <View style={[styles.inputContainer, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}>
               <TextInput
                 placeholder={Bots.find(b => b.id === chatStore.sessionType)?.description || "输入内容..."}
