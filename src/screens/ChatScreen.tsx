@@ -111,7 +111,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      keyboardVerticalOffset={0}
     >
       {/* ChatGPT Style Header - Floating */}
       <View style={[
