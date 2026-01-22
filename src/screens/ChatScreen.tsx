@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid, StatusBar } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid, StatusBar, Keyboard } from 'react-native';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,11 +19,29 @@ export const ChatScreen = observer(({ navigation }: any) => {
   const [showSummaryPrompt, setShowSummaryPrompt] = useState(false);
   const [summaryHeight, setSummaryHeight] = useState(0);
   const [showBotSelector, setShowBotSelector] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
     if (!chatStore.currentSessionId) {
       chatStore.startNewSession('unselected');
     }
+  }, []);
+
+  // Track keyboard visibility for iOS to remove bottom safe area padding when keyboard is shown
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+
+    const showSubscription = Keyboard.addListener('keyboardWillShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
   }, []);
 
   // Reset summary prompt when switching sessions
@@ -223,7 +241,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
           />
 
           {/* ChatGPT Style Input */}
-          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background, paddingBottom: Math.max(insets.bottom, 15) }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.background, paddingBottom: isKeyboardVisible ? 15 : Math.max(insets.bottom, 15) }]}>
             <View style={[styles.inputContainer, { backgroundColor: theme.colors.grey1, borderColor: theme.colors.grey5 }]}>
               <TextInput
                 placeholder={Bots.find(b => b.id === chatStore.sessionType)?.description || "输入内容..."}
