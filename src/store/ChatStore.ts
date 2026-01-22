@@ -225,10 +225,15 @@ class ChatStore {
 
         // Prepare Context (excluding this message and newer ones, although mostly this is latest)
         // Actually strictly speaking we should send messages up to this point.
-        const previousMessages = this.messages.slice(0, msgIndex).map(m => ({
-            role: m.role,
-            content: `[${new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })}] ${m.content}`
-        }));
+        const previousMessages = this.messages.slice(0, msgIndex).map(m => {
+            const date = new Date(m.timestamp);
+            const dateStr = `${date.getMonth() + 1}-${date.getDate()}`;
+            const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+            return {
+                role: m.role,
+                content: `${m.content} <timestamp>${dateStr} ${timeStr}</timestamp>`
+            };
+        });
 
         let systemPrompt = "";
         const bot = Bots.find(b => b.id === this.sessionType);
