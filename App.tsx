@@ -9,7 +9,7 @@ import 'react-native-gesture-handler'; // Important for Drawer
 import { Pushy, UpdateProvider } from 'react-native-update';
 
 const pushyClient = new Pushy({
-  appKey: Platform.OS === 'ios' ? 'YOUR_IOS_APP_KEY' : 'GjxR64HzBIbR8d3cme6i76da',
+  appKey: Platform.OS === 'ios' ? 'fatKukVmb_eKwY4tckoco1CZ' : 'GjxR64HzBIbR8d3cme6i76da',
 });
 
 const App = () => {
