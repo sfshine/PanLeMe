@@ -26,7 +26,7 @@ export class LLMService {
   }
 
   static async *streamChat(
-    messages: { role: string; content: string }[],
+    messages: { role: string; content: string; timestamp?: number }[],
     apiKey: string,
     model: string = 'gpt-3.5-turbo',
     baseUrl: string = LLMService.BASE_URL
@@ -63,7 +63,7 @@ export class LLMService {
   
   // Revised Implementation using a simpler fetch-like wrapper pattern
   static streamCompletion(
-    messages: { role: string; content: string }[],
+    messages: { role: string; content: string; timestamp?: number }[],
     apiKey: string,
     onDelta: (delta: string) => void,
     onFinish: () => void,
@@ -119,9 +119,20 @@ export class LLMService {
 
     xhr.onerror = (e) => onError(e);
     
+    // Send messages with timestamp field if present
+    // The API may ignore unknown fields, but we include it for potential future use
+    // or if the API supports timestamp metadata
+    const apiMessages = messages.map(({ role, content, timestamp }) => {
+      const msg: any = { role, content };
+      if (timestamp !== undefined) {
+        msg.timestamp = timestamp;
+      }
+      return msg;
+    });
+    
     xhr.send(JSON.stringify({
       model,
-      messages,
+      messages: apiMessages,
       stream: true,
     }));
 

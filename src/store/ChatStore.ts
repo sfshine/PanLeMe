@@ -226,12 +226,10 @@ class ChatStore {
         // Prepare Context (excluding this message and newer ones, although mostly this is latest)
         // Actually strictly speaking we should send messages up to this point.
         const previousMessages = this.messages.slice(0, msgIndex).map(m => {
-            const date = new Date(m.timestamp);
-            const dateStr = `${date.getMonth() + 1}-${date.getDate()}`;
-            const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
             return {
                 role: m.role,
-                content: `${m.content} <timestamp>${dateStr} ${timeStr}</timestamp>`
+                content: m.content,
+                timestamp: m.timestamp
             };
         });
 
@@ -367,11 +365,14 @@ class ChatStore {
             if (msg && msg.type === 'streaming') msg.status = 'loading';
         });
 
-        // Gather content
-        const records = this.messages
+        // Gather user messages with timestamp
+        const userMessages = this.messages
             .filter(m => m.role === 'user' && m.type !== 'request-summary')
-            .map(m => `${new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}: ${m.content}`)
-            .join('\n');
+            .map(m => ({
+                role: m.role,
+                content: m.content,
+                timestamp: m.timestamp
+            }));
 
         const bot = Bots.find(b => b.id === this.sessionType);
         const summaryConfig = bot?.summary;
@@ -393,7 +394,7 @@ class ChatStore {
 
         const promptMessages = [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: `用户会话记录：${records}` }
+            ...userMessages
         ];
 
         this.abortController = LLMService.streamCompletion(
