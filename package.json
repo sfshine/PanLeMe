@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "build:ios:release": "bash scripts/build-ios-release.sh"
+    "build:ios:release": "bash scripts/build-ios-release.sh",
+    "pushy:ios": "bash scripts/upload-js-bundle-ios.sh"
   },
   "dependencies": {
     "@react-native-community/netinfo": "11.4.1",

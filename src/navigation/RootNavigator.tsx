@@ -16,13 +16,12 @@ import { CustomDrawerContent } from '../components/CustomDrawerContent';
 
 const MainDrawer = () => {
   return (
-    <Drawer.Navigator 
-        initialRouteName="Chat" 
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{ headerShown: false }} 
+    <Drawer.Navigator
+      initialRouteName="Chat"
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Drawer.Screen name="Chat" component={ChatScreen} />
-      <Drawer.Screen name="Settings" component={SettingsScreen} />
     </Drawer.Navigator>
   );
 };
@@ -35,16 +34,25 @@ const AuthStack = () => {
   );
 };
 
+const AppStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainDrawer" component={MainDrawer} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+    </Stack.Navigator>
+  );
+};
+
 export const RootNavigator = observer(() => {
   // Wait for hydration
   if (!userStore.hasHydrated) {
-      return null; // Or Splash Screen
+    return null; // Or Splash Screen
   }
 
   return (
     <NavigationContainer>
       {userStore.isConfigured ? (
-        <MainDrawer />
+        <AppStack />
       ) : (
         <AuthStack />
       )}
