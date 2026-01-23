@@ -354,7 +354,7 @@ class ChatStore {
     }
 
     async generateSummary() {
-        if (this.sessionType !== 'daily' || !userStore.apiKey) return;
+        if (!userStore.apiKey) return;
 
         this.isStreaming = true;
         const aiMsgId = (Date.now() + 1).toString();
