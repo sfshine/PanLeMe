@@ -222,7 +222,7 @@ export const ChatScreen = observer(({ navigation }: any) => {
 
       {chatStore.sessionType === 'unselected' ? (
         <View style={{ flex: 1, paddingTop: headerHeight }}>
-          <GuidePage onSelect={(type) => chatStore.initializeSession(type)} />
+          <GuidePage onSelect={(type) => chatStore.startOrSwitchToSession(type as any)} />
         </View>
       ) : (
         <>

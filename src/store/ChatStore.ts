@@ -112,6 +112,28 @@ class ChatStore {
         }
     }
 
+    startOrSwitchToSession(type: SessionType) {
+        // 1. Check if we already have a session of this type from today
+        const today = new Date().toLocaleDateString();
+        const existingSession = this.sessions.find(s => {
+            if (s.type !== type) return false;
+            const sessionDate = new Date(s.timestamp).toLocaleDateString();
+            return sessionDate === today;
+        });
+
+        if (existingSession) {
+            // Switch to existing
+            // If currently in a session, save it first
+            if (this.sessionType !== 'unselected') {
+                this.saveCurrentSession();
+            }
+            this.loadSession(existingSession.id);
+        } else {
+            // Start new
+            this.startNewSession(type);
+        }
+    }
+
     initializeSession(type: SessionType) {
         this.sessionType = type;
 
