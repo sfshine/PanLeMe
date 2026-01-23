@@ -15,7 +15,7 @@ export class LLMService {
         },
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
       console.log('[LLMService] Verification response status:', response.status);
       return response.status === 200;
@@ -32,7 +32,7 @@ export class LLMService {
     baseUrl: string = LLMService.BASE_URL
   ): AsyncGenerator<string, void, unknown> {
     const url = `${baseUrl}/chat/completions`;
-    
+
     // We use a simple promise-queue/generator approach with XHR for streaming
     let xhr = new XMLHttpRequest();
     xhr.open('POST', url);
@@ -52,18 +52,18 @@ export class LLMService {
         // For MVP we'll implement a basic buffer.
       }
     };
-    
+
     // Actually, writing a full robust SSE parser inside a single function is complex. 
     // Let's use a simpler "fetch" polyfill approach if possible, or just non-streaming for verification.
     // BUT user asked for "Typewriter flow", which IMPLIES streaming.
     // I will write a simplified SSE handler helper.
-    
+
     throw new Error("Not implemented fully yet");
   }
-  
+
   // Revised Implementation using a simpler fetch-like wrapper pattern
   static streamCompletion(
-    messages: { role: string; content: string; timestamp?: number }[],
+    messages: { role: string; content: string; timestamp?: number | string }[],
     apiKey: string,
     onDelta: (delta: string) => void,
     onFinish: () => void,
@@ -84,41 +84,41 @@ export class LLMService {
       if (xhr.readyState === 3 || xhr.readyState === 4) {
         const newData = xhr.responseText.substring(seenBytes);
         seenBytes = xhr.responseText.length;
-        
+
         const lines = newData.split('\n');
         for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('data: ')) {
-                const data = trimmed.slice(6);
-                if (data === '[DONE]') {
-                    continue; // Will handle finish in readyState 4
-                }
-                try {
-                    const json = JSON.parse(data);
-                    const content = json.choices?.[0]?.delta?.content;
-                    if (content) {
-                        onDelta(content);
-                    }
-                } catch (e) {
-                   // Ignore parse errors for partial chunks
-                }
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') {
+              continue; // Will handle finish in readyState 4
             }
+            try {
+              const json = JSON.parse(data);
+              const content = json.choices?.[0]?.delta?.content;
+              if (content) {
+                onDelta(content);
+              }
+            } catch (e) {
+              // Ignore parse errors for partial chunks
+            }
+          }
         }
       }
-      
+
       if (xhr.readyState === 4) {
         if (xhr.status >= 200 && xhr.status < 300) {
-            onFinish();
+          onFinish();
         } else {
-            const error: any = new Error(`API Error: ${xhr.status} ${xhr.responseText}`);
-            error.status = xhr.status;
-            onError(error);
+          const error: any = new Error(`API Error: ${xhr.status} ${xhr.responseText}`);
+          error.status = xhr.status;
+          onError(error);
         }
       }
     };
 
     xhr.onerror = (e) => onError(e);
-    
+
     // Send messages with timestamp field if present
     // The API may ignore unknown fields, but we include it for potential future use
     // or if the API supports timestamp metadata
@@ -129,7 +129,7 @@ export class LLMService {
       }
       return msg;
     });
-    
+
     xhr.send(JSON.stringify({
       model,
       messages: apiMessages,

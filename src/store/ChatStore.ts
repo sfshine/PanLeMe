@@ -393,7 +393,7 @@ class ChatStore {
             .map(m => ({
                 role: m.role,
                 content: m.content,
-                timestamp: m.timestamp
+                time: new Date(m.timestamp).toLocaleTimeString()
             }));
 
         const bot = Bots.find(b => b.id === this.sessionType);
@@ -414,11 +414,14 @@ class ChatStore {
 
         const systemPrompt = summaryConfig.systemPrompt;
 
+        const historyJson = JSON.stringify(userMessages);
+
         const promptMessages = [
             { role: 'system', content: systemPrompt },
-            ...userMessages
+            { role: 'user', content: historyJson },
+            { role: 'user', content: "请根据以上对话历史数据生成今日复盘" }
         ];
-
+        console.log('[ChatStore] promptMessages', promptMessages);
         this.abortController = LLMService.streamCompletion(
             promptMessages,
             userStore.apiKey,
