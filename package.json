@@ -8,8 +8,9 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "build:ios:release": "bash scripts/build-ios-release.sh",
-    "pushy:ios": "bash scripts/upload-js-bundle-ios.sh"
+    "build:ios:ipa": "bash scripts/build-ios-release.sh",
+    "pushy:ios": "bash scripts/upload-js-bundle-ios.sh",
+    "deploy:ios": "bash scripts/build-and-install-ios.sh"
   },
   "dependencies": {
     "@react-native-clipboard/clipboard": "^1.16.3",
