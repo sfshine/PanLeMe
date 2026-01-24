@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { Alert } from 'react-native';
 import { LLMService } from '../services/LLMService';
 import { StorageService, StorageKeys } from '../services/StorageService';
 import { userStore } from './UserStore';
@@ -122,12 +123,32 @@ class ChatStore {
         });
 
         if (existingSession) {
-            // Switch to existing
-            // If currently in a session, save it first
-            if (this.sessionType !== 'unselected') {
-                this.saveCurrentSession();
-            }
-            this.loadSession(existingSession.id);
+            Alert.alert(
+                '发现今日已有会话',
+                '您想继续之前的会话，还是开始一个新的会话？',
+                [
+                    {
+                        text: '继续之前的',
+                        onPress: () => {
+                            if (this.sessionType !== 'unselected') {
+                                this.saveCurrentSession();
+                            }
+                            this.loadSession(existingSession.id);
+                        }
+                    },
+                    {
+                        text: '开始新的',
+                        style: 'destructive',
+                        onPress: () => {
+                            // Save current if needed before switching
+                            if (this.sessionType !== 'unselected') {
+                                this.saveCurrentSession();
+                            }
+                            this.startNewSession(type);
+                        }
+                    }
+                ]
+            );
         } else {
             // Start new
             this.startNewSession(type);
