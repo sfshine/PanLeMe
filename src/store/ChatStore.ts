@@ -24,6 +24,33 @@ class ChatStore {
     private lastSaveTime: number = 0;
     private readonly SAVE_THROTTLE_MS = 1000;
 
+    // 获取有效日期：凌晨2点前算前一天
+    private getEffectiveDate(): string {
+        const now = new Date();
+        const hour = now.getHours();
+        const effectiveDate = hour < 2
+            ? new Date(now.getTime() - 24 * 60 * 60 * 1000)  // 减去1天
+            : now;
+        return effectiveDate.toLocaleDateString();
+    }
+
+    // 获取会话时间戳对应的有效日期
+    private getEffectiveDateForTimestamp(timestamp: number): string {
+        const date = new Date(timestamp);
+        const hour = date.getHours();
+        const effectiveDate = hour < 2
+            ? new Date(date.getTime() - 24 * 60 * 60 * 1000)
+            : date;
+        return effectiveDate.toLocaleDateString();
+    }
+
+    // 格式化日期和时间：2026/1/24 23:42
+    private formatDateWithTime(date: Date): string {
+        const dateStr = date.toLocaleDateString();
+        const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        return `${dateStr} ${timeStr}`;
+    }
+
     constructor() {
         makeAutoObservable(this);
         this.loadSessions();
@@ -61,9 +88,24 @@ class ChatStore {
         // Update session list if new or title changed (MVP: Title = Date)
         if (!existing) {
             const bot = Bots.find(b => b.id === this.sessionType);
+            const effectiveDate = this.getEffectiveDate();
+            const now = new Date();
+
+            // 检查同一天是否已有相同类型的会话
+            const hasSameDaySession = this.sessions.some(s => {
+                if (s.type !== this.sessionType) return false;
+                const sessionDate = this.getEffectiveDateForTimestamp(s.timestamp);
+                return sessionDate === effectiveDate;
+            });
+
+            // 如果同一天已有会话，标题追加时间；否则只用日期
             const title = bot
-                ? `${bot.title}-${new Date().toLocaleDateString()}`
-                : `新会话-${new Date().toLocaleDateString()}`;
+                ? hasSameDaySession
+                    ? `${bot.title}-${this.formatDateWithTime(now)}`
+                    : `${bot.title}-${effectiveDate}`
+                : hasSameDaySession
+                    ? `新会话-${this.formatDateWithTime(now)}`
+                    : `新会话-${effectiveDate}`;
 
             this.sessions.unshift({
                 id: this.currentSessionId,
@@ -130,11 +172,11 @@ class ChatStore {
     }
 
     startOrSwitchToSession(type: SessionType) {
-        // 1. Check if we already have a session of this type from today
-        const today = new Date().toLocaleDateString();
+        // 1. Check if we already have a session of this type from today (凌晨2点前算前一天)
+        const today = this.getEffectiveDate();
         const existingSession = this.sessions.find(s => {
             if (s.type !== type) return false;
-            const sessionDate = new Date(s.timestamp).toLocaleDateString();
+            const sessionDate = this.getEffectiveDateForTimestamp(s.timestamp);
             return sessionDate === today;
         });
 
@@ -506,7 +548,7 @@ class ChatStore {
                     // Update Badge/Title
                     const session = this.sessions.find(s => s.id === this.currentSessionId);
                     if (session) {
-                        session.title = `今日复盘-${new Date().toLocaleDateString()}`;
+                        session.title = `今日复盘-${this.getEffectiveDate()}`;
                         this.saveSessions();
                     }
                 });
