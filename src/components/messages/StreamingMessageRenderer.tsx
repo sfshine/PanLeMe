@@ -47,9 +47,10 @@ const StreamingMessageComponent = observer(({ message, theme }: { message: Messa
                 <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>生成失败</Text>
             )}
             {msg.status === 'interrupted' && (
-                <Text style={{ color: theme.colors.grey3, fontSize: 12, marginTop: 4 }}>已停止生成</Text>
-            )}
-        </View>
+                <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>生成中断</Text>
+            )
+            }
+        </View >
     );
 });
 

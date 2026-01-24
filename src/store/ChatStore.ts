@@ -21,6 +21,8 @@ class ChatStore {
     // Optimization: Stream buffers and listeners to avoid frequent MobX updates
     private streamBuffers: Map<string, string> = new Map();
     private streamListeners: Map<string, (content: string) => void> = new Map();
+    private lastSaveTime: number = 0;
+    private readonly SAVE_THROTTLE_MS = 1000;
 
     constructor() {
         makeAutoObservable(this);
@@ -83,6 +85,19 @@ class ChatStore {
                 const session = this.sessions.find(s => s.id === id);
                 if (session) this.sessionType = session.type;
                 this.hasShownSummaryPrompt = false;
+
+                // [Fix] Handle interrupted messages
+                let hasChanges = false;
+                this.messages.forEach(m => {
+                    if (m.type === 'streaming' && (m.status === 'loading' || m.status === 'pending')) {
+                        m.status = 'interrupted';
+                        hasChanges = true;
+                    }
+                });
+                if (hasChanges) {
+                    this.saveCurrentSession();
+                }
+
             } catch (e) { console.error(e) }
         }
     }
@@ -266,6 +281,7 @@ class ChatStore {
         // Initialize buffer
         this.streamBuffers.set(messageId, '');
         this.notifyListeners(messageId, '');
+        this.lastSaveTime = Date.now(); // Reset throttle timer
 
         // Prepare Context (excluding this message and newer ones, although mostly this is latest)
         // Actually strictly speaking we should send messages up to this point.
@@ -310,10 +326,22 @@ class ChatStore {
             userStore.apiKey,
             (delta) => {
                 // Update buffer and notify listener directly
-                // NO MobX action needed for this part
                 const currentBuffer = (this.streamBuffers.get(messageId) || '') + delta;
                 this.streamBuffers.set(messageId, currentBuffer);
                 this.notifyListeners(messageId, currentBuffer);
+
+                // [Persistence] Throttled save to disk
+                const now = Date.now();
+                if (now - this.lastSaveTime > this.SAVE_THROTTLE_MS) {
+                    runInAction(() => {
+                        const currentMsg = this.messages.find(m => m.id === messageId);
+                        if (currentMsg) {
+                            currentMsg.content = currentBuffer;
+                            this.saveCurrentSession();
+                            this.lastSaveTime = now;
+                        }
+                    });
+                }
             },
             () => {
                 runInAction(() => {

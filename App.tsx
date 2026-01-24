@@ -39,7 +39,7 @@ const App = () => {
     <SafeAreaProvider>
       <ThemeProvider theme={theme}>
         <UpdateProvider client={pushyClient}>
-          <StatusBar style="auto" />
+          <StatusBar style="dark" />
           <RootNavigator />
         </UpdateProvider>
       </ThemeProvider>
