@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid, StatusBar, Keyboard } from 'react-native';
+import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, Modal, Alert, ToastAndroid, StatusBar, Keyboard, ActionSheetIOS } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { Button, Text, Icon, useTheme } from '@rneui/themed';
 import { observer } from 'mobx-react-lite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +10,7 @@ import MessageBubble from '../components/MessageBubble';
 import GuidePage from '../components/GuidePage';
 import { Bots } from '../config/Bots';
 import SummaryPrompt from '../components/SummaryPrompt';
+import { MessageContextMenu } from '../components/MessageContextMenu';
 
 export const ChatScreen = observer(({ navigation }: any) => {
   const { theme } = useTheme();
@@ -20,6 +22,9 @@ export const ChatScreen = observer(({ navigation }: any) => {
   const [summaryHeight, setSummaryHeight] = useState(0);
   const [showBotSelector, setShowBotSelector] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Message Menu State
+  const [operatingMessage, setOperatingMessage] = useState<any>(null);
 
   useEffect(() => {
     if (!chatStore.currentSessionId) {
@@ -114,6 +119,38 @@ export const ChatScreen = observer(({ navigation }: any) => {
     if (!inputText.trim()) return;
     chatStore.sendMessage(inputText);
     setInputText('');
+  };
+
+  const handleLongPress = (message: any) => {
+    setOperatingMessage(message);
+  };
+
+  const handleMenuAction = (action: 'copy' | 'delete') => {
+    if (!operatingMessage) return;
+
+    // Cache the message before clearing state (though for copy it matters less, for delete we need ID)
+    const message = operatingMessage;
+    setOperatingMessage(null);
+
+    if (action === 'copy') {
+      Clipboard.setString(message.content);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show('已复制', ToastAndroid.SHORT);
+      }
+    } else if (action === 'delete') {
+      Alert.alert(
+        '确认删除',
+        '确定要删除这条消息吗？',
+        [
+          { text: '取消', style: 'cancel' },
+          {
+            text: '删除',
+            style: 'destructive',
+            onPress: () => chatStore.deleteMessage(message.id)
+          }
+        ]
+      );
+    }
   };
 
   const getSessionTitle = () => {
@@ -231,7 +268,13 @@ export const ChatScreen = observer(({ navigation }: any) => {
             data={chatStore.messages.slice().reverse()}
             extraData={chatStore.messages.length}
             keyExtractor={item => item.id}
-            renderItem={({ item }) => <MessageBubble message={item} theme={theme} />}
+            renderItem={({ item }) => (
+              <MessageBubble
+                message={item}
+                theme={theme}
+                onLongPress={handleLongPress}
+              />
+            )}
             contentContainerStyle={[
               styles.listContent,
               { paddingBottom: headerHeight + 8 }
@@ -302,6 +345,15 @@ export const ChatScreen = observer(({ navigation }: any) => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+
+      <MessageContextMenu
+        visible={!!operatingMessage}
+        onClose={() => setOperatingMessage(null)}
+        onCopy={() => handleMenuAction('copy')}
+        onDelete={() => handleMenuAction('delete')}
+      />
+
     </KeyboardAvoidingView>
   );
 });
@@ -310,6 +362,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

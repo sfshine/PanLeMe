@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Text, Icon } from '@rneui/themed';
 import { Message } from '../types/ChatTypes';
 import { MessageContent } from './messages/MessageRegistry';
@@ -9,19 +9,23 @@ import './messages/StreamingMessageRenderer';
 interface MessageBubbleProps {
     message: Message;
     theme: any;
+    onLongPress?: (message: Message) => void;
 }
 
-const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
+const MessageBubble = ({ message, theme, onLongPress }: MessageBubbleProps) => {
     // Hidden internal messages
     if (message.type === 'request-summary') return null;
 
     const isUser = message.role === 'user';
 
     return (
-        <View style={[
-            styles.messageRow,
-            { backgroundColor: isUser ? theme.colors.background : theme.colors.grey0 }
-        ]}>
+        <TouchableOpacity
+            onLongPress={() => onLongPress && onLongPress(message)}
+            activeOpacity={0.9}
+            style={[
+                styles.messageRow,
+                { backgroundColor: isUser ? theme.colors.background : theme.colors.grey0 }
+            ]}>
             {/* Avatar */}
             <View style={[
                 styles.avatar,
@@ -44,7 +48,7 @@ const MessageBubble = ({ message, theme }: MessageBubbleProps) => {
                 </Text>
                 <MessageContent message={message} theme={theme} />
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 

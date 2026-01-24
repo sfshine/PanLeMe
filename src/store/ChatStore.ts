@@ -367,6 +367,12 @@ class ChatStore {
 
 
 
+
+    deleteMessage(id: string) {
+        this.messages = this.messages.filter(m => m.id !== id);
+        this.saveCurrentSession();
+    }
+
     markMessageAnimationCompleted(id: string) {
         const msg = this.messages.find(m => m.id === id);
         if (msg) {
