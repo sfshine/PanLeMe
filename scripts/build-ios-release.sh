@@ -33,14 +33,14 @@ echo -e "${YELLOW}步骤 1: 清理构建目录...${NC}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-echo -e "${YELLOW}步骤 2: 安装 CocoaPods 依赖...${NC}"
-cd "$IOS_DIR"
-if [ -f "Podfile" ]; then
-    bundle exec pod install
-else
-    echo -e "${RED}错误: 未找到 Podfile${NC}"
-    exit 1
-fi
+# echo -e "${YELLOW}步骤 2: 安装 CocoaPods 依赖...${NC}"
+# cd "$IOS_DIR"
+# if [ -f "Podfile" ]; then
+#     bundle exec pod install
+# else
+#     echo -e "${RED}错误: 未找到 Podfile${NC}"
+#     exit 1
+# fi
 
 echo -e "${YELLOW}步骤 3: 构建 Archive...${NC}"
 cd "$PROJECT_ROOT"

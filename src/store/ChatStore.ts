@@ -92,6 +92,7 @@ class ChatStore {
         this.saveSessions();
         StorageService.removeItem(`session_${id}`);
         if (this.currentSessionId === id) {
+            this.sessionType = 'unselected'; // Prevent startNewSession from saving this deleted session
             this.startNewSession('unselected'); // Reset to default
         }
     }
