@@ -24,6 +24,10 @@ export const initSentry = () => {
     
     // Set environment based on __DEV__ flag
     environment: __DEV__ ? 'development' : 'production',
+
+    sendDefaultPii: true,
+
+    profilesSampleRate: __DEV__ ? 1.0 : 0.2, 
     
     // Enable performance monitoring
     tracesSampleRate: __DEV__ ? 1.0 : 0.2, // 100% in dev, 20% in production
