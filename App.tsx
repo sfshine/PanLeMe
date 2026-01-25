@@ -7,6 +7,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { theme } from './src/theme/theme';
 import 'react-native-gesture-handler'; // Important for Drawer
 import { Pushy, UpdateProvider } from 'react-native-update';
+import { withErrorBoundary } from './src/services/SentryService';
 
 const pushyClient = new Pushy({
   appKey: Platform.OS === 'ios' ? 'fatKukVmb_eKwY4tckoco1CZ' : 'GjxR64HzBIbR8d3cme6i76da',
@@ -47,4 +48,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default withErrorBoundary(App);

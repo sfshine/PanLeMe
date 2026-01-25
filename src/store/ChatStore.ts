@@ -6,6 +6,7 @@ import { userStore } from './UserStore';
 import { Message, SessionType, Session } from '../types/ChatTypes';
 // import { Prompts } from '../config/Prompts'; // Removed
 import { Bots } from '../config/Bots';
+import { captureException, addBreadcrumb, setContext, trackEvent } from '../services/SentryService';
 
 class ChatStore {
     messages: Message[] = [];
@@ -61,8 +62,13 @@ class ChatStore {
         if (storedWrapper) {
             try {
                 this.sessions = JSON.parse(storedWrapper);
+                addBreadcrumb('storage', 'Sessions loaded', { count: this.sessions.length });
             } catch (e) {
                 console.error("Failed to parse sessions", e);
+                captureException(e, {
+                    context: 'loadSessions',
+                    storedWrapperLength: storedWrapper.length,
+                });
             }
         }
     }
@@ -128,6 +134,17 @@ class ChatStore {
                 if (session) this.sessionType = session.type;
                 this.hasShownSummaryPrompt = false;
 
+                // Track session loaded event
+                trackEvent('session_loaded', {
+                    sessionId: id,
+                    sessionType: this.sessionType,
+                    messageCount: this.messages.length,
+                });
+                setContext('current_session', {
+                    sessionId: id,
+                    sessionType: this.sessionType,
+                });
+
                 // [Fix] Handle interrupted messages
                 let hasChanges = false;
                 this.messages.forEach(m => {
@@ -140,7 +157,13 @@ class ChatStore {
                     this.saveCurrentSession();
                 }
 
-            } catch (e) { console.error(e) }
+            } catch (e) {
+                console.error(e);
+                captureException(e, {
+                    context: 'loadSession',
+                    sessionId: id,
+                });
+            }
         }
     }
 
@@ -168,6 +191,15 @@ class ChatStore {
 
         if (type !== 'unselected') {
             this.initializeSession(type);
+            // Track session creation event
+            trackEvent('session_created', {
+                sessionType: type,
+                sessionId: this.currentSessionId,
+            });
+            setContext('current_session', {
+                sessionId: this.currentSessionId,
+                sessionType: type,
+            });
         }
     }
 
@@ -241,6 +273,17 @@ class ChatStore {
 
     async sendMessage(content: string) {
         if (!content.trim()) return;
+
+        // Track message sent event
+        addBreadcrumb('user_action', 'Message sent', {
+            sessionType: this.sessionType,
+            messageLength: content.length,
+        });
+        trackEvent('message_sent', {
+            sessionType: this.sessionType,
+            sessionId: this.currentSessionId,
+            messageLength: content.length,
+        });
 
         // 1. Add User Message
         this.addMessage({
@@ -402,6 +445,14 @@ class ChatStore {
                 });
             },
             (err) => {
+                // Track streaming error in Sentry
+                captureException(err, {
+                    context: 'startStreaming',
+                    messageId,
+                    sessionType: this.sessionType,
+                    errorStatus: err.status,
+                });
+                
                 runInAction(() => {
                     this.isStreaming = false;
                     const currentMsgIndex = this.messages.findIndex(m => m.id === messageId);
@@ -453,6 +504,17 @@ class ChatStore {
 
     async generateSummary() {
         if (!userStore.apiKey) return;
+
+        // Track summary generation event
+        addBreadcrumb('user_action', 'Summary generation started', {
+            sessionType: this.sessionType,
+            sessionId: this.currentSessionId,
+        });
+        trackEvent('summary_generation_started', {
+            sessionType: this.sessionType,
+            sessionId: this.currentSessionId,
+            messageCount: this.messages.length,
+        });
 
         this.isStreaming = true;
         const aiMsgId = (Date.now() + 1).toString();
@@ -545,6 +607,12 @@ class ChatStore {
                     this.streamBuffers.delete(aiMsgId);
                     this.saveCurrentSession();
 
+                    // Track summary generation completed
+                    trackEvent('summary_generation_completed', {
+                        sessionType: this.sessionType,
+                        sessionId: this.currentSessionId,
+                    });
+
                     // Update Badge/Title
                     const session = this.sessions.find(s => s.id === this.currentSessionId);
                     if (session) {
@@ -554,6 +622,13 @@ class ChatStore {
                 });
             },
             (err) => {
+                // Track summary generation error in Sentry
+                captureException(err, {
+                    context: 'generateSummary',
+                    sessionType: this.sessionType,
+                    errorStatus: err.status,
+                });
+                
                 runInAction(() => {
                     this.isStreaming = false;
                     const msgIndex = this.messages.findIndex(m => m.id === aiMsgId);

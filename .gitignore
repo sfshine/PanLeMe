@@ -76,3 +76,7 @@ yarn-error.log
 # react-native-update
 .update
 .pushy
+
+# Sentry
+.sentryclirc
+sentry.properties

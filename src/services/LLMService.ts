@@ -1,8 +1,12 @@
+import { trackAPIError, addBreadcrumb, captureException, Sentry } from './SentryService';
+
 export class LLMService {
   private static BASE_URL = 'https://api.openai.com/v1'; // Default, allows override
 
   static async verifyKey(apiKey: string, baseUrl: string = LLMService.BASE_URL): Promise<boolean> {
     console.log('[LLMService] Verifying key with URL:', baseUrl);
+    addBreadcrumb('api', 'Verifying API key', { baseUrl });
+    
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -18,9 +22,24 @@ export class LLMService {
 
       clearTimeout(timeoutId);
       console.log('[LLMService] Verification response status:', response.status);
+      
+      if (response.status !== 200) {
+        trackAPIError(
+          `${baseUrl}/models`,
+          response.status,
+          'API Key verification failed',
+          { method: 'GET' }
+        );
+      }
+      
       return response.status === 200;
     } catch (e: any) {
       console.error('[LLMService] Key verification failed:', e.name, e.message);
+      captureException(e, {
+        context: 'API Key verification',
+        baseUrl,
+        errorName: e.name,
+      });
       return false;
     }
   }
@@ -71,8 +90,17 @@ export class LLMService {
     model: string = 'gpt-3.5-turbo',
     baseUrl: string = LLMService.BASE_URL
   ) {
+    const url = `${baseUrl}/chat/completions`;
+    
+    // Performance tracking
+    const startTime = Date.now();
+    let firstTokenTime: number | null = null;
+    let totalTokens = 0;
+    
+    addBreadcrumb('api', 'Starting stream completion', { model, baseUrl });
+    
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${baseUrl}/chat/completions`);
+    xhr.open('POST', url);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
     xhr.setRequestHeader('Cache-Control', 'no-cache');
@@ -97,6 +125,13 @@ export class LLMService {
               const json = JSON.parse(data);
               const content = json.choices?.[0]?.delta?.content;
               if (content) {
+                // Track time to first token
+                if (firstTokenTime === null) {
+                  firstTokenTime = Date.now();
+                  const ttft = firstTokenTime - startTime;
+                  addBreadcrumb('performance', 'Time to first token', { ttft_ms: ttft, model });
+                }
+                totalTokens++;
                 onDelta(content);
               }
             } catch (e) {
@@ -107,17 +142,60 @@ export class LLMService {
       }
 
       if (xhr.readyState === 4) {
+        const totalTime = Date.now() - startTime;
+        
         if (xhr.status >= 200 && xhr.status < 300) {
+          // Track successful completion performance
+          addBreadcrumb('performance', 'Stream completion finished', {
+            total_time_ms: totalTime,
+            ttft_ms: firstTokenTime ? firstTokenTime - startTime : null,
+            total_tokens: totalTokens,
+            model,
+          });
+          
+          // Send performance data to Sentry
+          Sentry.addBreadcrumb({
+            category: 'llm.performance',
+            message: 'API call completed',
+            data: {
+              duration_ms: totalTime,
+              time_to_first_token_ms: firstTokenTime ? firstTokenTime - startTime : null,
+              tokens_received: totalTokens,
+              model,
+              status: xhr.status,
+            },
+            level: 'info',
+          });
+          
           onFinish();
         } else {
           const error: any = new Error(`API Error: ${xhr.status} ${xhr.responseText}`);
           error.status = xhr.status;
+          
+          // Track API error in Sentry with performance data
+          trackAPIError(
+            url,
+            xhr.status,
+            xhr.responseText || 'Unknown error',
+            { model, method: 'POST', operation: 'streamCompletion', duration_ms: totalTime }
+          );
+          
           onError(error);
         }
       }
     };
 
-    xhr.onerror = (e) => onError(e);
+    xhr.onerror = (e) => {
+      const totalTime = Date.now() - startTime;
+      // Track network error in Sentry
+      captureException(e, {
+        context: 'LLM stream completion network error',
+        url,
+        model,
+        duration_ms: totalTime,
+      });
+      onError(e);
+    };
 
     // Send messages with timestamp field if present
     // The API may ignore unknown fields, but we include it for potential future use

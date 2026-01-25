@@ -1976,6 +1976,30 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNSentry (7.10.0):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Sentry/HybridSDK (= 8.58.0)
+    - Yoga
+  - Sentry/HybridSDK (8.58.0)
   - SocketRocket (0.7.1)
   - SQLCipher (4.10.0):
     - SQLCipher/standard (= 4.10.0)
@@ -2080,11 +2104,13 @@ DEPENDENCIES:
   - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
+    - Sentry
     - SocketRocket
     - SQLCipher
     - SSZipArchive
@@ -2251,6 +2277,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSentry:
+    :path: "../node_modules/@sentry/react-native"
   VisionCamera:
     :path: "../node_modules/react-native-vision-camera"
   Yoga:
@@ -2337,6 +2365,8 @@ SPEC CHECKSUMS:
   RNPermissions: 10b454768bd94c07806e5641ac86bfff46258294
   RNReanimated: 10e3ab0f2af8d558f0cbc4d17efc0c371ddf29ba
   RNScreens: 0f01bbed9bd8045a8d58e4b46993c28c7f498f3c
+  RNSentry: e1b472384db64b8fd9f238827b391b8b688817d1
+  Sentry: d587a8fe91ca13503ecd69a1905f3e8a0fcf61be
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SQLCipher: eb79c64049cb002b4e9fcb30edb7979bf4706dfc
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
